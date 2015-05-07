@@ -1,17 +1,26 @@
-def get_uia_root():
-    import comtypes
-    import comtypes.client
+import comtypes
+import comtypes.client
 
-    comtypes.client.GetModule('UIAutomationCore.dll')
 
-    # noinspection PyProtectedMember,PyUnresolvedReferences
-    uia = comtypes.CoCreateInstance(comtypes.gen.UIAutomationClient.CUIAutomation._reg_clsid_,
-                                    interface=comtypes.gen.UIAutomationClient.IUIAutomation,
-                                    clsctx=comtypes.CLSCTX_INPROC_SERVER)
+class Uia(object):
+    def __init__(self):
+        self.uia = None
 
-    desktop_element = uia.getRootElement()
-    print(desktop_element.currentName)
-    comtypes.CoUninitialize()
+    def __enter__(self):
+        comtypes.client.GetModule('UIAutomationCore.dll')
+        # noinspection PyProtectedMember,PyUnresolvedReferences
+        self.uia = comtypes.CoCreateInstance(comtypes.gen.UIAutomationClient.CUIAutomation._reg_clsid_,
+                                             interface=comtypes.gen.UIAutomationClient.IUIAutomation,
+                                             clsctx=comtypes.CLSCTX_INPROC_SERVER)
+        return self
+
+    def root(self):
+        return self.uia.getRootElement()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        comtypes.CoUninitialize()
+
 
 if __name__ == '__main__':
-    get_uia_root()
+    with Uia() as uia:
+        print(uia.root().currentName)
