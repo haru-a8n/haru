@@ -1,5 +1,18 @@
 import comtypes
 import comtypes.client
+import subprocess
+
+
+class Robot(object):
+    def __init__(self):
+        super(Robot, self).__init__()
+        self.proc = None
+
+    def start(self, args):
+        """
+        Start an  application
+        """
+        self.proc = subprocess.Popen(args)
 
 
 class Uia(object):
@@ -22,5 +35,7 @@ class Uia(object):
 
 
 if __name__ == '__main__':
-    with Uia() as uia:
-        print(uia.root().currentName)
+    # with Uia() as uia:
+    #     print(uia.root().currentName)
+    robot = Robot()
+    robot.start(['notepad'])
