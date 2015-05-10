@@ -1,8 +1,12 @@
+import inspect
+import os
 import comtypes
 import comtypes.client
 import subprocess
+import traceback
+import sys
 
-trace = True
+trace_on = True
 
 
 class Logger(object):
@@ -17,11 +21,10 @@ class Logger(object):
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            print('>--Entering %s' % fn.__name__)
-
+            code_path = '{0}.{1}'.format(args[0].__class__.__name__, fn.__name__)
+            print('>{0}'.format(code_path))
             out = fn(*args, **kwargs)
-
-            print('<--Exiting %s' % fn.__name__)
+            print('<{0}'.format(code_path))
             # Return the return value
             return out
         return wrapper
@@ -60,10 +63,8 @@ class CWindow(object):
                 else:
                     self.element = None
 
+    @Logger(trace_on)
     def name_best_match(self, ae=None, string_match=''):
-        if self.trace:
-            print '>>%s@%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name,string_match)
-
         assert ae, 'AE object None'
 
         ae = swa.TreeWalker.ControlViewWalker.GetFirstChild( ae )
@@ -85,7 +86,7 @@ class Robot(object):
         super(Robot, self).__init__()
         self.proc = None
 
-    @Logger(trace=trace)
+    @Logger(trace_on)
     def start(self, args):
         """
         Start an  application
