@@ -1,10 +1,6 @@
-import inspect
-import os
 import comtypes
 import comtypes.client
 import subprocess
-import traceback
-import sys
 
 trace_on = True
 
@@ -81,6 +77,36 @@ class CWindow(object):
         return ae
 
 
+class MainWindow(CWindow):
+    """Represents the main window"""
+    def __init__(self, trace=False, attr = None, parent= None):
+
+        self.trace = trace
+        self.attr = attr
+        self.proc = parent.proc
+        self.aeRoot = iprcs.uiauto().RootElement()
+
+
+        iLoop = 0
+        while True:
+            prop = swa.AutomationElement.ProcessIdProperty
+            cond = swa.PropertyCondition( prop, self.proc.Id )
+            ae = self.aeRoot.FindFirst(swa.TreeScope.Children, cond)
+
+            if ae:
+                break
+            else:
+                print 'Main window not there yet, retrying... @%s'%time.asctime()
+                time.sleep( 0.1 )
+                iLoop += 1
+                if iLoop >= 5:
+                    print 'Giving up on trying to get main window...%s'%time.asctime()
+                    break
+        self.element = ae
+
+        super( MainWindow, self ).__init__(trace = trace, attr = attr, parent=parent, aeInit=True)
+
+
 class Robot(object):
     def __init__(self):
         super(Robot, self).__init__()
@@ -93,28 +119,48 @@ class Robot(object):
         """
         self.proc = subprocess.Popen(args)
 
+    def __getattr__(self, attr):
+        obj = MainWindow(trace=True, attr=attr, parent=self)
+        if obj.element:
+            return obj
+        else:
+            raise AttributeError, attr
 
-class Uia(object):
+
+class Singleton(object):
+    def __new__(cls, *args, **kwds):
+        it = cls.__dict__.get("__it__")
+        if it is not None:
+            return it
+        cls.__it__ = it = object.__new__(cls)
+        it.init(*args, **kwds)
+        return it
+
+    def init(self, *args, **kwds):
+        pass
+
+
+class Uia(Singleton):
     def __init__(self):
-        self.uia = None
-
-    def __enter__(self):
+        print('Initializing UIA COM')
         comtypes.client.GetModule('UIAutomationCore.dll')
         # noinspection PyProtectedMember,PyUnresolvedReferences
         self.uia = comtypes.CoCreateInstance(comtypes.gen.UIAutomationClient.CUIAutomation._reg_clsid_,
                                              interface=comtypes.gen.UIAutomationClient.IUIAutomation,
                                              clsctx=comtypes.CLSCTX_INPROC_SERVER)
-        return self
 
     def root(self):
         return self.uia.getRootElement()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        comtypes.CoUninitialize()
 
 
 if __name__ == '__main__':
     # with Uia() as uia:
     #     print(uia.root().currentName)
-    robot = Robot()
-    robot.start(['notepad'])
+    # robot = Robot()
+    # robot.start(['notepad'])
+    # notepad = robot.Notepad
+    a = Uia()
+    print(a.root().currentName)
+    b = Uia()
+    if a is b:
+        print('ok')
