@@ -79,32 +79,30 @@ class CWindow(object):
 
 class MainWindow(CWindow):
     """Represents the main window"""
-    def __init__(self, trace=False, attr = None, parent= None):
+    def __init__(self, attr=None, parent=None):
 
-        self.trace = trace
+        assert not (parent is None)
         self.attr = attr
-        self.proc = parent.proc
-        self.aeRoot = iprcs.uiauto().RootElement()
-
-
-        iLoop = 0
+        self.uia = Uia()
+        i_loop = 0
         while True:
-            prop = swa.AutomationElement.ProcessIdProperty
-            cond = swa.PropertyCondition( prop, self.proc.Id )
-            ae = self.aeRoot.FindFirst(swa.TreeScope.Children, cond)
+            print(parent.proc.pid)
+            cond = self.uia.uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_ProcessIdPropertyId,
+                                                        parent.proc.pid)
+            ae = self.uia.root().FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
 
             if ae:
                 break
             else:
                 print 'Main window not there yet, retrying... @%s'%time.asctime()
                 time.sleep( 0.1 )
-                iLoop += 1
-                if iLoop >= 5:
+                i_loop += 1
+                if i_loop >= 5:
                     print 'Giving up on trying to get main window...%s'%time.asctime()
                     break
         self.element = ae
 
-        super( MainWindow, self ).__init__(trace = trace, attr = attr, parent=parent, aeInit=True)
+        super(MainWindow, self).__init__(attr=attr, parent=parent, ae_init=True)
 
 
 class Robot(object):
@@ -120,7 +118,7 @@ class Robot(object):
         self.proc = subprocess.Popen(args)
 
     def __getattr__(self, attr):
-        obj = MainWindow(trace=True, attr=attr, parent=self)
+        obj = MainWindow(attr=attr, parent=self)
         if obj.element:
             return obj
         else:
@@ -154,13 +152,6 @@ class Uia(Singleton):
 
 
 if __name__ == '__main__':
-    # with Uia() as uia:
-    #     print(uia.root().currentName)
-    # robot = Robot()
-    # robot.start(['notepad'])
-    # notepad = robot.Notepad
-    a = Uia()
-    print(a.root().currentName)
-    b = Uia()
-    if a is b:
-        print('ok')
+    robot = Robot()
+    robot.start(['notepad'])
+    notepad = robot.Notepad
