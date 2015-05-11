@@ -104,6 +104,13 @@ class MainWindow(CWindow):
 
         super(MainWindow, self).__init__(attr=attr, parent=parent, ae_init=True)
 
+    @Logger(trace_on)
+    def close(self):
+        # http://weichong78.blogspot.com/2013/11/python-com-and-windows-uiautomation.html
+        pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_WindowPatternId)
+        interface_close = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
+        interface_close.Close()
+
 
 class Robot(object):
     def __init__(self):
@@ -155,3 +162,4 @@ if __name__ == '__main__':
     robot = Robot()
     robot.start(['notepad'])
     notepad = robot.Notepad
+    notepad.close()
