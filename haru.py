@@ -2,6 +2,7 @@ import comtypes
 import comtypes.client
 import string
 import subprocess
+import time
 
 trace_on = True
 
@@ -60,6 +61,29 @@ class CWindow(object):
                 else:
                     self.element = None
 
+    def __getattr__(self, attr):
+        # self.ShowTrace()
+        if str(attr).lower() == 'combobox':
+            obj = CComboBox(trace=self.trace, attr=attr, parent=self)
+        elif str(attr).lower() == 'treeview':
+            obj = CTreeView(trace=self.trace, attr=attr, parent=self)
+        elif str(attr).lower() == 'listbox':
+            obj = CListBox(trace=self.trace, attr=attr, parent=self)
+        elif str(attr).lower() == 'listview':
+            obj = CListView(trace=self.trace, attr=attr, parent=self)
+        elif str(attr).lower() == 'edit':
+            obj = CEdit(trace=self.trace, attr=attr, parent=self)
+        elif str(attr).lower() == 'popupmenu':
+            self.Click(self.element, button='right')
+            obj = CPopupMenu(trace=self.trace, attr=attr, parent=self)
+        else:
+            obj = CWindow(trace=self.trace, attr=attr, parent=self)
+
+        if obj.element:
+            return obj
+        else:
+            raise AttributeError, attr
+
     # noinspection PyMethodMayBeStatic
     def best_match(self, str1, attr):
         """
@@ -68,10 +92,28 @@ class CWindow(object):
 
         str1 = string.replace(str1, ' ', '')
         str1 = string.replace(str1, "'", "")
+        str1 = str1.encode('ascii', 'ignore')
         if str(attr).lower() in str(str1).lower():
             return True
         else:
             return False
+
+    def invoke(self):
+        retry_interval = 0.5
+        retry_max = 5
+        loops = 0
+        while True:
+            try:
+                if_invoke_pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_InvokePatternId)
+                if_invoke = if_invoke_pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationInvokePattern)
+                if_invoke.invoke()
+                break
+            except:
+                print 'Retrying invoke...'
+                time.sleep(retry_interval)
+                loops += 1
+                if loops > retry_max:
+                    raise
 
     @Logger(trace_on)
     def name_best_match(self, ae=None, string_match=''):
@@ -87,6 +129,8 @@ class CWindow(object):
             print 'ClassName: ', ae.CurrentClassName
             if self.best_match(ae.CurrentClassName, string_match):
                 break
+            elif self.best_match(ae.CurrentName, string_match):
+                break
             ae = cvw.GetNextSiblingElement(ae)
 
         # Don't need to assert of None, we need to check using other mechanism
@@ -96,13 +140,12 @@ class CWindow(object):
 class CEdit(CWindow):
     """ Edit control """
 
-    def __init__(self, trace = False, attr = None, parent=None):
-        self.trace = trace
-        super( CEdit, self ).__init__(trace = trace, attr = attr, parent = parent)
+    def __init__(self, attr=None, parent=None):
+        super(CEdit, self).__init__(attr=attr, parent=parent)
 
-        #This is when creating object specifically called for CEdit
-        if str(attr).lower() == 'edit' and self.element == None:
-            self.element = parent.element #this is not the correct element, will be corrected in __call__
+        # This is when creating object specifically called for CEdit
+        if str(attr).lower() == 'edit' and self.element is None:
+            self.element = parent.element  # this is not the correct element, will be corrected in __call__
 
     def type(self, value):
         self.element.SetFocus()
@@ -157,9 +200,9 @@ class MainWindow(CWindow):
                 obj.__dict__['aeMain'] = self.element
                 obj.__dict__['element'] = menubarElement
         elif attr.lower() == 'edit':
-            obj = CEdit(trace=True, attr = attr, parent = self)
+            obj = CEdit(attr=attr, parent=self)
         else:
-            obj = super( MainWindow, self).__getattr__(attr)
+            obj = super(MainWindow, self).__getattr__(attr)
 
         if obj.element:
             return obj
@@ -173,6 +216,30 @@ class MainWindow(CWindow):
         pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_WindowPatternId)
         interface_close = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
         interface_close.Close()
+
+    def wait_for(self, object_type=None, caption=None, timeout=-1, wait_interval=0.1):
+        """
+        ObjType: Type of object ['dialog']
+        Caption: Caption of the object
+        timeout: (seconds). -1 wait forever
+        waitInterval: (seconds). Time delay between retrying to to check for the object.
+        """
+        time_start = time.time()
+        if str(object_type).lower() == 'dialog':
+            while 1:
+                cond = self.uia.uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId,
+                                                            caption)
+                ae = self.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
+                if ae is None:
+                    #print ">>> Waiting @%s"%time.asctime()
+                    time.sleep(waitInterval)
+                else:
+                    break
+                if timeout != -1:
+                    if timeout < time.time() - time_start:
+                        raise TimeOutError
+        else:
+            raise DebuggingForcedError
 
 
 class Robot(object):
@@ -227,3 +294,5 @@ if __name__ == '__main__':
     notepad = robot.Notepad
     notepad.edit.type("hello")
     notepad.close()
+    notepad.wait_for(object_type='dialog', caption='Notepad')
+    notepad.Notepad.DontSave.invoke()
