@@ -1,5 +1,6 @@
 import comtypes
 import comtypes.client
+import string
 import subprocess
 
 trace_on = True
@@ -51,30 +52,68 @@ class CWindow(object):
             if ae:
                 self.element = ae
             else:
-                #This is when creating object specifically called for a specific window
-                windows = ['window','statusbar']
-                if str(attr).lower() in windows and ae == None:
-                    #This information gets used in __call__
+                # This is when creating object specifically called for a specific window
+                windows = ['window', 'statusbar']
+                if str(attr).lower() in windows and ae is None:
+                    # This information gets used in __call__
                     self.element = self.parent.element
                 else:
                     self.element = None
+
+    # noinspection PyMethodMayBeStatic
+    def best_match(self, str1, attr):
+        """
+        This will become a heuristic matching engine in the future
+        """
+
+        str1 = string.replace(str1, ' ', '')
+        str1 = string.replace(str1, "'", "")
+        if str(attr).lower() in str(str1).lower():
+            return True
+        else:
+            return False
 
     @Logger(trace_on)
     def name_best_match(self, ae=None, string_match=''):
         assert ae, 'AE object None'
 
-        ae = swa.TreeWalker.ControlViewWalker.GetFirstChild( ae )
+        cvw = Uia().uia.ControlViewWalker
+        ae = cvw.GetFirstChildElement(ae)
+        print('string_match:', string_match)
         while ae:
             print '-'*10
-            print 'Name: ',ae.Current.Name
-            print 'LocalizedControlType:',ae.Current.LocalizedControlType
-            print 'ClassName: ',ae.Current.ClassName
-            if self.BestMatch(ae.Current.Name, string_match ):
+            print 'Name: ', ae.CurrentName
+            print 'LocalizedControlType:', ae.CurrentLocalizedControlType
+            print 'ClassName: ', ae.CurrentClassName
+            if self.best_match(ae.CurrentClassName, string_match):
                 break
-            ae = swa.TreeWalker.ControlViewWalker.GetNextSibling( ae )
+            ae = cvw.GetNextSiblingElement(ae)
 
-        #Don't need to assert of None, we need to check using other mechanism
+        # Don't need to assert of None, we need to check using other mechanism
         return ae
+
+
+class CEdit(CWindow):
+    """ Edit control """
+
+    def __init__(self, trace = False, attr = None, parent=None):
+        self.trace = trace
+        super( CEdit, self ).__init__(trace = trace, attr = attr, parent = parent)
+
+        #This is when creating object specifically called for CEdit
+        if str(attr).lower() == 'edit' and self.element == None:
+            self.element = parent.element #this is not the correct element, will be corrected in __call__
+
+    def type(self, value):
+        self.element.SetFocus()
+        if bool(self.element.GetCurrentPropertyValue(
+                comtypes.gen.UIAutomationClient.UIA_IsValuePatternAvailablePropertyId)):
+            if_value_pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_ValuePatternId)
+            val = if_value_pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationValuePattern)
+            val.SetValue(value)
+        else:
+            assert "no type/sendkeys handler"
+            # swf.SendKeys.SendWait( sValue )
 
 
 class MainWindow(CWindow):
@@ -104,9 +143,33 @@ class MainWindow(CWindow):
 
         super(MainWindow, self).__init__(attr=attr, parent=parent, ae_init=True)
 
+    def __getattr__(self, attr):
+        if self.trace and hasattr(sys,'_getframe'):
+            print '>>%s@%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name,attr)
+
+        #match main menu
+        if attr.lower() == 'menu':
+            cond = swa.PropertyCondition( swa.AutomationElement.ControlTypeProperty, swa.ControlType.MenuBar)
+            menubarElement = self.element.FindFirst(swa.TreeScope.Children, cond)
+            if menubarElement:
+                obj = CMenuBar( trace=self.trace, attr = attr, parent = self )
+                obj.__dict__['parent'] = self
+                obj.__dict__['aeMain'] = self.element
+                obj.__dict__['element'] = menubarElement
+        elif attr.lower() == 'edit':
+            obj = CEdit(trace=True, attr = attr, parent = self)
+        else:
+            obj = super( MainWindow, self).__getattr__(attr)
+
+        if obj.element:
+            return obj
+        else:
+            raise AttributeError, attr
+
     @Logger(trace_on)
     def close(self):
         # http://weichong78.blogspot.com/2013/11/python-com-and-windows-uiautomation.html
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ee671195(v=vs.85).aspx
         pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_WindowPatternId)
         interface_close = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
         interface_close.Close()
@@ -162,4 +225,5 @@ if __name__ == '__main__':
     robot = Robot()
     robot.start(['notepad'])
     notepad = robot.Notepad
+    notepad.edit.type("hello")
     notepad.close()

@@ -7,3 +7,10 @@ Installation
 		pip install comtypes
 	Windows 10 64-bit build 10074 (due to bug, see http://bugs.python.org/issue24127)
 		python -m pip install comtypes
+		
+		
+Related projects
+	http://code.google.com/p/swapy/
+	http://code.google.com/p/pywinauto/
+	http://stackoverflow.com/questions/22198792/create-a-poker-table-scanner
+	
