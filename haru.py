@@ -114,6 +114,7 @@ class CWindow(object):
                 loops += 1
                 if loops > retry_max:
                     raise
+    click = invoke
 
     @Logger(trace_on)
     def name_best_match(self, ae=None, string_match=''):
@@ -168,12 +169,14 @@ class MainWindow(CWindow):
         self.uia = Uia()
         i_loop = 0
         while True:
-            print(parent.proc.pid)
+            print('pid : {}'.format(parent.proc.pid))
             cond = self.uia.uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_ProcessIdPropertyId,
                                                         parent.proc.pid)
+            print('getting ae')
             ae = self.uia.root().FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
 
             if ae:
+                print('we have ae')
                 break
             else:
                 print 'Main window not there yet, retrying... @%s'%time.asctime()
@@ -202,6 +205,7 @@ class MainWindow(CWindow):
         elif attr.lower() == 'edit':
             obj = CEdit(attr=attr, parent=self)
         else:
+            print('Generic windows : {}'.format(attr))
             obj = super(MainWindow, self).__getattr__(attr)
 
         if obj.element:
@@ -295,4 +299,5 @@ if __name__ == '__main__':
     notepad.edit.type("hello")
     notepad.close()
     notepad.wait_for(object_type='dialog', caption='Notepad')
-    notepad.Notepad.DontSave.invoke()
+    # notepad.Notepad.DontSave.invoke()
+    notepad.Notepad.DontSave.click()
