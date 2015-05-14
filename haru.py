@@ -1,5 +1,6 @@
 import comtypes
 import comtypes.client
+import ctypes
 import string
 import subprocess
 import time
@@ -48,6 +49,7 @@ class CWindow(object):
             pass
         else:
             # This will try to match by name
+            assert parent.element is not None, 'parent.element is None'
             ae = self.name_best_match(ae=parent.element, string_match=attr)
 
             if ae:
@@ -130,7 +132,7 @@ class CWindow(object):
             print 'ClassName: ', ae.CurrentClassName
             if self.best_match(ae.CurrentClassName, string_match):
                 break
-            elif self.best_match(ae.CurrentName, string_match):
+            elif ae.CurrentName is not None and self.best_match(ae.CurrentName, string_match):
                 break
             ae = cvw.GetNextSiblingElement(ae)
 
@@ -160,11 +162,117 @@ class CEdit(CWindow):
             # swf.SendKeys.SendWait( sValue )
 
 
+class CMenuBar(CWindow):
+    """ Menu Bar - legacy applications manipulate Menu/MenuItems.
+    This specialized window will handle those cases.
+    """
+
+    def __init__(self, attr=None, parent=None):
+        assert attr, 'attr is None'
+        assert parent, 'parent is None'
+        self.parent = parent
+        super(CMenuBar, self).__init__(attr=attr, parent=parent)
+
+    def __getattr__(self, attr):
+        # self.parent.proc.WaitForInputIdle()
+        self.parent.wait_for_input_idle()
+
+        obj = CMenuItem(attr=attr, parent=self)
+        if obj.element:
+            obj.ae_main = self.parent.element
+            return obj
+        else:
+            raise AttributeError(attr)
+
+
+class CMenuItem(CWindow):
+    """ Menu Item """
+
+    def __init__(self, attr=None, parent=None):
+        super(CMenuItem, self).__init__(attr=attr, parent=parent)
+        print('init',attr)
+        # ae here should point to the current automation element, thus say re-parented correctly
+        if isinstance(parent, CMenuBar):
+            # this case will handle creation of main menu elements as child of root window
+            # this element should be the one that will be used for manipulating menu items
+            print('what',attr)
+            cond = Uia().uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId, attr)
+            ae = self.parent.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
+
+            self.click()
+
+            # enum ExpandCollapseState
+            #     {   ExpandCollapseState_Collapsed   = 0,
+            #     ExpandCollapseState_Expanded    = 1,
+            #     ExpandCollapseState_PartiallyExpanded   = 2,
+            #     ExpandCollapseState_LeafNode    = 3
+            #     } ;
+            while ae.GetCurrentPropertyValue(
+                    comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId) != 1:
+                print('Waiting for {} to expand--@{}'.format(parent.element.CurrentName, time.asctime()))
+                time.sleep(0.1)
+
+            print('CurrentName : {}'.format(parent.element.CurrentName))
+        else:
+            print('who: {}'.format(parent.element.CurrentName))
+            # First call will get the current menu
+            cond = Uia().uia.CreateTrueCondition()
+            ae = parent.ae_main.FindFirst(comtypes.gen.UIAutomationClient.TreeScope_Descendants,
+                                          cond)
+
+            # # Second call contains descendants. Why? maybe a bug in UIA
+            # ae = parent.element.FindFirst(comtypes.gen.UIAutomationClient.TreeScope_Descendants,
+            #                               cond)
+            print('here',attr)
+            cvw = Uia().uia.ControlViewWalker
+            ae = cvw.GetFirstChildElement(ae)
+
+            while ae:
+                print 'loop:',ae.CurrentName
+                print(type(self))
+                if self.best_match(ae.CurrentName, attr):
+                    break
+
+                ae = cvw.GetNextSiblingElement(ae)
+        self.element = ae
+        self.ae_main = self.parent.ae_main
+
+    def __getattr__(self, attr):
+        obj = CMenuItem(attr=attr, parent=self)
+        if obj.element:
+            return obj
+        else:
+            raise AttributeError(attr)
+
+    def Invoke(self ):
+        if self.trace and hasattr(sys,'_getframe'):
+            print '>>%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name)
+
+        mnuPattern = self.element.GetCurrentPattern( swa.InvokePattern.Pattern )
+        mnuPattern.Invoke()
+
+    def IsChecked(self):
+        if self.trace and hasattr(sys,'_getframe'):
+            print '>>%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name)
+
+        bChecked = False
+
+        if bool(self.element.GetCurrentPropertyValue( swa.AutomationElement.IsTogglePatternAvailableProperty)):
+            if self.element.GetCurrentPropertyValue(swa.TogglePattern.ToggleStateProperty) == swa.ToggleState.On:
+                bChecked = True
+
+        #This will close the menus, and just in case it is really deep menu we send 5 esc
+        swf.SendKeys.SendWait( 5*'{ESC}' )
+
+        return bChecked
+
+
 class MainWindow(CWindow):
     """Represents the main window"""
     def __init__(self, attr=None, parent=None):
 
         assert not (parent is None)
+        self.parent = parent
         self.attr = attr
         self.uia = Uia()
         i_loop = 0
@@ -190,18 +298,15 @@ class MainWindow(CWindow):
         super(MainWindow, self).__init__(attr=attr, parent=parent, ae_init=True)
 
     def __getattr__(self, attr):
-        if self.trace and hasattr(sys,'_getframe'):
-            print '>>%s@%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name,attr)
-
-        #match main menu
-        if attr.lower() == 'menu':
-            cond = swa.PropertyCondition( swa.AutomationElement.ControlTypeProperty, swa.ControlType.MenuBar)
-            menubarElement = self.element.FindFirst(swa.TreeScope.Children, cond)
-            if menubarElement:
-                obj = CMenuBar( trace=self.trace, attr = attr, parent = self )
-                obj.__dict__['parent'] = self
-                obj.__dict__['aeMain'] = self.element
-                obj.__dict__['element'] = menubarElement
+        if attr.lower() == 'menu':  # match main menu
+            cond = self.uia.uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_ControlTypePropertyId,
+                                                        comtypes.gen.UIAutomationClient.UIA_MenuBarControlTypeId)
+            ae = self.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
+            assert ae is not None
+            if ae:
+                obj = CMenuBar(attr=attr, parent=self)
+                obj.element = ae
+                obj.ae_main = self.element
         elif attr.lower() == 'edit':
             obj = CEdit(attr=attr, parent=self)
         else:
@@ -245,6 +350,14 @@ class MainWindow(CWindow):
         else:
             raise DebuggingForcedError
 
+    # noinspection PyMethodMayBeStatic,PyPep8Naming
+    def wait_for_input_idle(self):
+        WaitForInputIdle = ctypes.windll.user32.WaitForInputIdle
+        OpenProcess = ctypes.windll.kernel32.OpenProcess
+        PROCESS_QUERY_INFORMATION = 1024
+        hwnd_process = OpenProcess(PROCESS_QUERY_INFORMATION, 0, self.parent.proc.pid)
+        ret = WaitForInputIdle(hwnd_process, -1)
+
 
 class Robot(object):
     def __init__(self):
@@ -263,7 +376,7 @@ class Robot(object):
         if obj.element:
             return obj
         else:
-            raise AttributeError, attr
+            raise AttributeError(attr)
 
 
 class Singleton(object):
