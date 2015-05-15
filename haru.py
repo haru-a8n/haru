@@ -244,28 +244,6 @@ class CMenuItem(CWindow):
         else:
             raise AttributeError(attr)
 
-    def Invoke(self ):
-        if self.trace and hasattr(sys,'_getframe'):
-            print '>>%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name)
-
-        mnuPattern = self.element.GetCurrentPattern( swa.InvokePattern.Pattern )
-        mnuPattern.Invoke()
-
-    def IsChecked(self):
-        if self.trace and hasattr(sys,'_getframe'):
-            print '>>%s@%s'%(self.__class__,sys._getframe(0).f_code.co_name)
-
-        bChecked = False
-
-        if bool(self.element.GetCurrentPropertyValue( swa.AutomationElement.IsTogglePatternAvailableProperty)):
-            if self.element.GetCurrentPropertyValue(swa.TogglePattern.ToggleStateProperty) == swa.ToggleState.On:
-                bChecked = True
-
-        #This will close the menus, and just in case it is really deep menu we send 5 esc
-        swf.SendKeys.SendWait( 5*'{ESC}' )
-
-        return bChecked
-
 
 class MainWindow(CWindow):
     """Represents the main window"""
