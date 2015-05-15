@@ -285,8 +285,8 @@ class MainWindow(CWindow):
         # http://weichong78.blogspot.com/2013/11/python-com-and-windows-uiautomation.html
         # https://msdn.microsoft.com/en-us/library/windows/desktop/ee671195(v=vs.85).aspx
         pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_WindowPatternId)
-        interface_close = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
-        interface_close.Close()
+        if_close = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
+        if_close.Close()
 
     def wait_for(self, object_type=None, caption=None, timeout=-1, wait_interval=0.1):
         """
