@@ -190,46 +190,30 @@ class CMenuItem(CWindow):
 
     def __init__(self, attr=None, parent=None):
         super(CMenuItem, self).__init__(attr=attr, parent=parent)
-        print('init',attr)
-        # ae here should point to the current automation element, thus say re-parented correctly
+        # On platform win32 (vs WPF), Menubar's automation element parent is the main window.
+        # Menuitem parent is the main menuitem (e.g. File). File's parent is main window!
         if isinstance(parent, CMenuBar):
-            # this case will handle creation of main menu elements as child of root window
-            # this element should be the one that will be used for manipulating menu items
-            print('what',attr)
             cond = Uia().uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId, attr)
             ae = self.parent.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
-
             self.click()
 
-            # enum ExpandCollapseState
-            #     {   ExpandCollapseState_Collapsed   = 0,
-            #     ExpandCollapseState_Expanded    = 1,
-            #     ExpandCollapseState_PartiallyExpanded   = 2,
-            #     ExpandCollapseState_LeafNode    = 3
-            #     } ;
+            # noinspection PyPep8Naming
+            ExpandCollapseState_Expanded = 1  # enum ExpandCollapseState
             while ae.GetCurrentPropertyValue(
-                    comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId) != 1:
+                    comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId) != \
+                    ExpandCollapseState_Expanded:
                 print('Waiting for {} to expand--@{}'.format(parent.element.CurrentName, time.asctime()))
                 time.sleep(0.1)
-
-            print('CurrentName : {}'.format(parent.element.CurrentName))
         else:
-            print('who: {}'.format(parent.element.CurrentName))
-            # First call will get the current menu
+            # First call will get the main menu, e.g. File
             cond = Uia().uia.CreateTrueCondition()
             ae = parent.ae_main.FindFirst(comtypes.gen.UIAutomationClient.TreeScope_Descendants,
                                           cond)
 
-            # # Second call contains descendants. Why? maybe a bug in UIA
-            # ae = parent.element.FindFirst(comtypes.gen.UIAutomationClient.TreeScope_Descendants,
-            #                               cond)
-            print('here',attr)
+            # This will get the sub menu, e.g., File | Exit
             cvw = Uia().uia.ControlViewWalker
             ae = cvw.GetFirstChildElement(ae)
-
             while ae:
-                print 'loop:',ae.CurrentName
-                print(type(self))
                 if self.best_match(ae.CurrentName, attr):
                     break
 
