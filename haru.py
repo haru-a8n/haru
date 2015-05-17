@@ -191,7 +191,7 @@ class CMenuItem(CWindow):
     def __init__(self, attr=None, parent=None):
         super(CMenuItem, self).__init__(attr=attr, parent=parent)
         # On platform win32 (vs WPF), Menubar's automation element parent is the main window.
-        # Menuitem parent is the main menuitem (e.g. File). File's parent is main window!
+        # Each submenu's parent is the main window
         if isinstance(parent, CMenuBar):
             cond = Uia().uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId, attr)
             ae = self.parent.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
@@ -209,7 +209,6 @@ class CMenuItem(CWindow):
             cond = Uia().uia.CreateTrueCondition()
             ae = parent.ae_main.FindFirst(comtypes.gen.UIAutomationClient.TreeScope_Descendants,
                                           cond)
-
             # This will get the sub menu, e.g., File | Exit
             cvw = Uia().uia.ControlViewWalker
             ae = cvw.GetFirstChildElement(ae)
@@ -218,7 +217,9 @@ class CMenuItem(CWindow):
                     break
 
                 ae = cvw.GetNextSiblingElement(ae)
+            self.menu_main = self.parent
         self.element = ae
+        self.parent = parent
         self.ae_main = self.parent.ae_main
 
     def __getattr__(self, attr):
@@ -227,6 +228,23 @@ class CMenuItem(CWindow):
             return obj
         else:
             raise AttributeError(attr)
+
+    def is_checked(self):
+        checked = False
+
+        if bool(self.element.GetCurrentPropertyValue(
+                comtypes.gen.UIAutomationClient.UIA_IsTogglePatternAvailablePropertyId)):
+            # noinspection PyPep8Naming
+            ToggleState_On = 1
+            if self.element.GetCurrentPropertyValue(comtypes.gen.UIAutomationClient.UIA_ToggleToggleStatePropertyId) == \
+                    ToggleState_On:
+                checked = True
+        print(dir(self.ae_main))
+        self.ae_main.click()
+        #This will close the menus, and just in case it is really deep menu we send 5 esc
+        #swf.SendKeys.SendWait( 5*'{ESC}' )
+
+        return checked
 
 
 class MainWindow(CWindow):
@@ -285,8 +303,16 @@ class MainWindow(CWindow):
         # http://weichong78.blogspot.com/2013/11/python-com-and-windows-uiautomation.html
         # https://msdn.microsoft.com/en-us/library/windows/desktop/ee671195(v=vs.85).aspx
         pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_WindowPatternId)
-        if_close = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
-        if_close.Close()
+        if_window_pattern = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
+        if_window_pattern.Close()
+
+    def maximize(self):
+        pattern = self.element.GetCurrentPattern(comtypes.gen.UIAutomationClient.UIA_WindowPatternId)
+        if_window_pattern = pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationWindowPattern)
+        # noinspection PyPep8Naming
+        WindowVisualState_Maximized = 1
+        if if_window_pattern.CurrentWindowVisualState != WindowVisualState_Maximized:
+            if_window_pattern.SetWindowVisualState(WindowVisualState_Maximized)
 
     def wait_for(self, object_type=None, caption=None, timeout=-1, wait_interval=0.1):
         """
