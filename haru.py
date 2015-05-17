@@ -18,6 +18,7 @@ limitations under the License.
 import comtypes
 import comtypes.client
 import ctypes
+from lib.sendkeys import SendKeys
 import string
 import subprocess
 import time
@@ -256,11 +257,12 @@ class CMenuItem(CWindow):
             if self.element.GetCurrentPropertyValue(comtypes.gen.UIAutomationClient.UIA_ToggleToggleStatePropertyId) == \
                     ToggleState_On:
                 checked = True
-        print(dir(self.ae_main))
-        self.ae_main.click()
-        #This will close the menus, and just in case it is really deep menu we send 5 esc
-        #swf.SendKeys.SendWait( 5*'{ESC}' )
-
+        while True:
+            el = Uia().uia.GetFocusedElement()
+            if el.CurrentLocalizedControlType == 'menu item':
+                SendKeys('{ESC}')
+            else:
+                break
         return checked
 
 
