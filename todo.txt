@@ -1,2 +1,1 @@
-* 2 params
 * 3 params

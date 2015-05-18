@@ -162,13 +162,6 @@ class CWindow(object):
             index = kwargs['ChildIndex']
             ae = ae_collection.GetElement(index)
             assert ae, 'Automation Element is None child index {}'.format(index)
-            print('-')
-            print(ae.CurrentName)
-            print(ae.CurrentLocalizedControlType)
-            print('-')
-            print(ae.CurrentClassName)
-            print('=')
-            print('^'*10)
         else:
             # Match by kwargs
             conditions = []
@@ -180,9 +173,8 @@ class CWindow(object):
 
             cond_len = len(conditions)
             if cond_len == 2:
-                raise NotImplementedError('Need to implement this')
-                andcond = swa.AndCondition( tuple(conditions) )
-                ae = ae_parent.FindFirst(scope, andcond)
+                and_cond = uia.CreateAndCondition(conditions[0],conditions[1])
+                ae = ae_parent.FindFirst(scope, and_cond)
             elif cond_len > 2:
                 raise NotImplementedError('Need to implement this')
             else:

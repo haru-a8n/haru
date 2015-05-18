@@ -3,8 +3,8 @@ import sys
 sys.path.append('..')
 import haru
 
-skip = True
-# skip = False
+# skip = True
+skip = False
 
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
@@ -28,7 +28,7 @@ class HaruTest(unittest.TestCase):
         notepad.Notepad.DontSave.click()
 
     @unittest.skipIf(skip, "bypass")
-    def testFileExit(self):
+    def test_file_exit(self):
         """Test File | Exit"""
 
         robot = haru.Robot()
@@ -51,7 +51,7 @@ class HaruTest(unittest.TestCase):
         notepad.Notepad.DontSave.click()
 
     @unittest.skipIf(skip, "bypass")
-    def testIsMenuChecked(self):
+    def test_is_menu_checked(self):
         """Menu checked"""
         robot = haru.Robot()
         robot.start(['notepad.exe'])
@@ -74,7 +74,8 @@ class HaruTest(unittest.TestCase):
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
 
-    def testStatusBar(self):
+    @unittest.skipIf(skip, "bypass")
+    def test_status_bar(self):
         """Test Status Bar"""
         robot = haru.Robot()
         robot.start(['notepad.exe'])
@@ -86,6 +87,25 @@ class HaruTest(unittest.TestCase):
             notepad.Menu.View.StatusBar.click()
 
         sb = notepad.StatusBar(ClassName='msctls_statusbar32')
+        obj = sb.Window(ChildIndex=1)
+        print obj.name()
+        notepad.Menu.File.Exit.click()
+        notepad.wait_for(object_type='dialog', caption='Notepad')
+        notepad.Notepad.DontSave.click()
+
+    # @unittest.skipIf(skip, "bypass")
+    def test_status_bar_2_params(self):
+        """Test Status Bar"""
+        robot = haru.Robot()
+        robot.start(['notepad.exe'])
+        notepad = robot.Notepad
+        notepad.edit.type("hello")
+        is_checked = notepad.Menu.View.StatusBar.is_checked()
+        print('{} checked : {}'.format('*'*10, is_checked))
+        if not is_checked:
+            notepad.Menu.View.StatusBar.click()
+
+        sb = notepad.StatusBar(ClassName='msctls_statusbar32', FrameworkId='Win32')
         obj = sb.Window(ChildIndex=1)
         print obj.name()
         notepad.Menu.File.Exit.click()
