@@ -48,24 +48,24 @@ class Logger(object):
 
 
 class CWindow(object):
-    def __init__(self, trace=False, attr=None, parent=None, ae_init=False):
+    def __init__(self, attr=None, parent=None, ae_init=False):
         """
         trace(True): Show log entry to most methods
         attr: attribute name used when called from __attr__
         parent: parent object
         ae_init(True): Initialization of Automation Element done at the subclass
         """
-        assert not (attr is None)
-        assert not (parent is None)
+        assert attr
+        assert parent
 
         self.parent = parent
 
-        self.trace = trace
         super(CWindow, self).__init__()
 
         if ae_init:
             pass
         else:
+            print('need to init')
             # This will try to match by name
             assert parent.element is not None, 'parent.element is None'
             ae = self.name_best_match(ae=parent.element, string_match=attr)
@@ -74,35 +74,53 @@ class CWindow(object):
                 self.element = ae
             else:
                 # This is when creating object specifically called for a specific window
+                print('attr is.... {}'.format(attr))
                 windows = ['window', 'statusbar']
-                if str(attr).lower() in windows and ae is None:
+                if str(attr).lower() in windows:
+                    print('set parent')
                     # This information gets used in __call__
+                    # print('statusbar here')
                     self.element = self.parent.element
                 else:
+                    print('else')
                     self.element = None
 
     def __getattr__(self, attr):
         # self.ShowTrace()
         if str(attr).lower() == 'combobox':
-            obj = CComboBox(trace=self.trace, attr=attr, parent=self)
+            obj = CComboBox(attr=attr, parent=self)
         elif str(attr).lower() == 'treeview':
-            obj = CTreeView(trace=self.trace, attr=attr, parent=self)
+            obj = CTreeView(attr=attr, parent=self)
         elif str(attr).lower() == 'listbox':
-            obj = CListBox(trace=self.trace, attr=attr, parent=self)
+            obj = CListBox(attr=attr, parent=self)
         elif str(attr).lower() == 'listview':
-            obj = CListView(trace=self.trace, attr=attr, parent=self)
+            obj = CListView(attr=attr, parent=self)
         elif str(attr).lower() == 'edit':
-            obj = CEdit(trace=self.trace, attr=attr, parent=self)
+            obj = CEdit(attr=attr, parent=self)
         elif str(attr).lower() == 'popupmenu':
             self.Click(self.element, button='right')
-            obj = CPopupMenu(trace=self.trace, attr=attr, parent=self)
+            obj = CPopupMenu(attr=attr, parent=self)
         else:
-            obj = CWindow(trace=self.trace, attr=attr, parent=self)
+            print('Generic window')
+            obj = CWindow(attr=attr, parent=self)
 
         if obj.element:
             return obj
         else:
-            raise AttributeError, attr
+            print(self.element.CurrentClassName)
+            print(type(self))
+            raise AttributeError(attr)
+
+    def __call__(self, **kwargs):
+        if len(kwargs) == 0:
+            return self
+        else:
+            assert self.parent.element, 'Parent AE object None'
+            ae = self.get_child_element( ae_parent= self.parent.element,**kwargs )
+
+            assert ae, 'Automation element object None'
+            self.element = ae
+            return self
 
     # noinspection PyMethodMayBeStatic
     def best_match(self, str1, attr):
@@ -117,6 +135,60 @@ class CWindow(object):
             return True
         else:
             return False
+
+    def get_child_element(self, ae_parent=None, search_scope='', **kwargs):
+        """
+        ae_parent: automation element the search will start from. If None, defaults to self.element
+        seach_scope: Children or Descendants. Corresponds to AutomationElement TreeScope
+        kwargs: Property to search
+        """
+
+        assert len(kwargs)
+        print 'Properties: %s' % kwargs
+
+        if ae_parent is None:
+            ae_parent = self.element
+
+        if (len(search_scope) == 0) or (search_scope.lower() == 'children'):
+            scope = comtypes.gen.UIAutomationClient.TreeScope_Children
+        else:
+            scope = comtypes.gen.UIAutomationClient.TreeScope_Descendants
+
+        uia = Uia().uia
+        # match by ChildIndex
+        if 'ChildIndex' in kwargs:
+            cond = uia.CreateTrueCondition()
+            ae_collection = ae_parent.FindAll(scope, cond)
+            index = kwargs['ChildIndex']
+            ae = ae_collection.GetElement(index)
+            assert ae, 'Automation Element is None child index {}'.format(index)
+            print('-')
+            print(ae.CurrentName)
+            print(ae.CurrentLocalizedControlType)
+            print('-')
+            print(ae.CurrentClassName)
+            print('=')
+            print('^'*10)
+        else:
+            # Match by kwargs
+            conditions = []
+            for key in kwargs:
+
+                prop = getattr(comtypes.gen.UIAutomationClient, 'UIA_{}PropertyId'.format(key))
+                cond = uia.CreatePropertyCondition(prop, kwargs[key])
+                conditions.append(cond)
+
+            cond_len = len(conditions)
+            if cond_len == 2:
+                raise NotImplementedError('Need to implement this')
+                andcond = swa.AndCondition( tuple(conditions) )
+                ae = ae_parent.FindFirst(scope, andcond)
+            elif cond_len > 2:
+                raise NotImplementedError('Need to implement this')
+            else:
+                ae = ae_parent.FindFirst(scope, cond)
+                assert ae, 'ae None'
+        return ae
 
     def invoke(self):
         retry_interval = 0.5
@@ -136,6 +208,9 @@ class CWindow(object):
                     raise
     click = invoke
 
+    def name(self):
+        return self.element.CurrentName
+
     @Logger(trace_on)
     def name_best_match(self, ae=None, string_match=''):
         assert ae, 'AE object None'
@@ -154,7 +229,7 @@ class CWindow(object):
                 break
             ae = cvw.GetNextSiblingElement(ae)
 
-        # Don't need to assert of None, we need to check using other mechanism
+        # Don't need to assert if None, we need to check using other mechanism
         return ae
 
 
@@ -177,7 +252,6 @@ class CEdit(CWindow):
             val.SetValue(value)
         else:
             assert "no type/sendkeys handler"
-            # swf.SendKeys.SendWait( sValue )
 
 
 class CMenuBar(CWindow):
@@ -250,13 +324,15 @@ class CMenuItem(CWindow):
     def is_checked(self):
         checked = False
 
-        if bool(self.element.GetCurrentPropertyValue(
-                comtypes.gen.UIAutomationClient.UIA_IsTogglePatternAvailablePropertyId)):
-            # noinspection PyPep8Naming
-            ToggleState_On = 1
-            if self.element.GetCurrentPropertyValue(comtypes.gen.UIAutomationClient.UIA_ToggleToggleStatePropertyId) == \
-                    ToggleState_On:
-                checked = True
+        state = self.element.GetCurrentPropertyValue(
+            comtypes.gen.UIAutomationClient.UIA_LegacyIAccessibleStatePropertyId)
+
+        # noinspection PyPep8Naming
+        STATE_SYSTEM_CHECKED = 0x10
+        print('state is {}'.format(state))
+        if STATE_SYSTEM_CHECKED & state == STATE_SYSTEM_CHECKED:
+            checked = True
+
         while True:
             el = Uia().uia.GetFocusedElement()
             if el.CurrentLocalizedControlType == 'menu item':
@@ -309,7 +385,7 @@ class MainWindow(CWindow):
         elif attr.lower() == 'edit':
             obj = CEdit(attr=attr, parent=self)
         else:
-            print('Generic windows : {}'.format(attr))
+            print('Generic window : {}'.format(attr))
             obj = super(MainWindow, self).__getattr__(attr)
 
         if obj.element:

@@ -3,8 +3,8 @@ import sys
 sys.path.append('..')
 import haru
 
-# skip = True
-skip = False
+skip = True
+# skip = False
 
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
@@ -50,6 +50,7 @@ class HaruTest(unittest.TestCase):
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
 
+    @unittest.skipIf(skip, "bypass")
     def testIsMenuChecked(self):
         """Menu checked"""
         robot = haru.Robot()
@@ -69,6 +70,24 @@ class HaruTest(unittest.TestCase):
             print "Item checked"
         else:
             print "not checked"
+        notepad.Menu.File.Exit.click()
+        notepad.wait_for(object_type='dialog', caption='Notepad')
+        notepad.Notepad.DontSave.click()
+
+    def testStatusBar(self):
+        """Test Status Bar"""
+        robot = haru.Robot()
+        robot.start(['notepad.exe'])
+        notepad = robot.Notepad
+        notepad.edit.type("hello")
+        is_checked = notepad.Menu.View.StatusBar.is_checked()
+        print('{} checked : {}'.format('*'*10, is_checked))
+        if not is_checked:
+            notepad.Menu.View.StatusBar.click()
+
+        sb = notepad.StatusBar(ClassName='msctls_statusbar32')
+        obj = sb.Window(ChildIndex=1)
+        print obj.name()
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
