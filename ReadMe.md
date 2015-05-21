@@ -1,4 +1,17 @@
 #Haru Automation#
+Windows UI Automation using mostly UIA
+
+##Automate Notepad?
+````python
+robot = Robot()
+robot.start(['notepad'])
+notepad = robot.Notepad
+notepad.edit.type("hello")
+notepad.close()
+notepad.wait_for(object_type='dialog', caption='Notepad')
+notepad.Notepad.DontSave.click()
+````
+
 
 ##Installation##
 * Download 32-bit version of Python 2.7.9 or newer from www.python.org
