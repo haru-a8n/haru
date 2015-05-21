@@ -93,9 +93,9 @@ class HaruTest(unittest.TestCase):
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
 
-    # @unittest.skipIf(skip, "bypass")
+    @unittest.skipIf(skip, "bypass")
     def test_status_bar_2_params(self):
-        """Test Status Bar"""
+        """__call__ with 2 params"""
         robot = haru.Robot()
         robot.start(['notepad.exe'])
         notepad = robot.Notepad
@@ -106,6 +106,25 @@ class HaruTest(unittest.TestCase):
             notepad.Menu.View.StatusBar.click()
 
         sb = notepad.StatusBar(ClassName='msctls_statusbar32', FrameworkId='Win32')
+        obj = sb.Window(ChildIndex=1)
+        print obj.name()
+        notepad.Menu.File.Exit.click()
+        notepad.wait_for(object_type='dialog', caption='Notepad')
+        notepad.Notepad.DontSave.click()
+
+    @unittest.skipIf(skip, "bypass")
+    def test_status_bar_3_params(self):
+        """__call__ with 3 params"""
+        robot = haru.Robot()
+        robot.start(['notepad.exe'])
+        notepad = robot.Notepad
+        notepad.edit.type("hello")
+        is_checked = notepad.Menu.View.StatusBar.is_checked()
+        print('{} checked : {}'.format('*'*10, is_checked))
+        if not is_checked:
+            notepad.Menu.View.StatusBar.click()
+
+        sb = notepad.StatusBar(ClassName='msctls_statusbar32', FrameworkId='Win32', LocalizedControlType="status bar")
         obj = sb.Window(ChildIndex=1)
         print obj.name()
         notepad.Menu.File.Exit.click()

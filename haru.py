@@ -173,13 +173,17 @@ class CWindow(object):
 
             cond_len = len(conditions)
             if cond_len == 2:
-                and_cond = uia.CreateAndCondition(conditions[0],conditions[1])
+                and_cond = uia.CreateAndCondition(conditions[0], conditions[1])
                 ae = ae_parent.FindFirst(scope, and_cond)
             elif cond_len > 2:
-                raise NotImplementedError('Need to implement this')
+                print('8'*88)
+                and_cond_array = uia.CreateAndConditionFromArray(conditions)
+                ae = ae_parent.FindFirst(scope, and_cond_array)
             else:
                 ae = ae_parent.FindFirst(scope, cond)
-                assert ae, 'ae None'
+
+            assert ae, 'Automation element None using PropertyId search'
+
         return ae
 
     def invoke(self):
