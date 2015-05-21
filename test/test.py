@@ -9,9 +9,9 @@ skip = False
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
     def test_cwindow_invoke(self):
-        robot = haru.Robot()
-        robot.start(['notepad'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
         notepad.close()
         notepad.wait_for(object_type='dialog', caption='Notepad')
@@ -19,9 +19,9 @@ class HaruTest(unittest.TestCase):
 
     @unittest.skipIf(skip, "bypass")
     def test_cwindow_click(self):
-        robot = haru.Robot()
-        robot.start(['notepad'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
         notepad.close()
         notepad.wait_for(object_type='dialog', caption='Notepad')
@@ -31,9 +31,9 @@ class HaruTest(unittest.TestCase):
     def test_file_exit(self):
         """Test File | Exit"""
 
-        robot = haru.Robot()
-        robot.start('notepad.exe')
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start('notepad.exe')
+        notepad = app.Notepad
         notepad.edit.type("hello world")
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
@@ -41,9 +41,9 @@ class HaruTest(unittest.TestCase):
 
     @unittest.skipIf(skip, "bypass")
     def test_cwindow_maximize(self):
-        robot = haru.Robot()
-        robot.start(['notepad'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
         notepad.maximize()
         notepad.close()
@@ -53,9 +53,9 @@ class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
     def test_is_menu_checked(self):
         """Menu checked"""
-        robot = haru.Robot()
-        robot.start(['notepad.exe'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad.exe'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
 
         # Either check it or not
@@ -77,9 +77,9 @@ class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
     def test_status_bar(self):
         """Test Status Bar"""
-        robot = haru.Robot()
-        robot.start(['notepad.exe'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad.exe'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
         print('{} checked : {}'.format('*'*10, is_checked))
@@ -96,9 +96,9 @@ class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
     def test_status_bar_2_params(self):
         """__call__ with 2 params"""
-        robot = haru.Robot()
-        robot.start(['notepad.exe'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad.exe'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
         print('{} checked : {}'.format('*'*10, is_checked))
@@ -115,9 +115,9 @@ class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
     def test_status_bar_3_params(self):
         """__call__ with 3 params"""
-        robot = haru.Robot()
-        robot.start(['notepad.exe'])
-        notepad = robot.Notepad
+        app = haru.App()
+        app.start(['notepad.exe'])
+        notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
         print('{} checked : {}'.format('*'*10, is_checked))

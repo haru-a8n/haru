@@ -438,9 +438,9 @@ class MainWindow(CWindow):
         ret = WaitForInputIdle(hwnd_process, -1)
 
 
-class Robot(object):
+class App(object):
     def __init__(self):
-        super(Robot, self).__init__()
+        super(App, self).__init__()
         self.proc = None
 
     @Logger(trace_on)
@@ -485,9 +485,9 @@ class Uia(Singleton):
 
 
 if __name__ == '__main__':
-    robot = Robot()
-    robot.start(['notepad'])
-    notepad = robot.Notepad
+    app = App()
+    app.start(['notepad'])
+    notepad = app.Notepad
     notepad.edit.type("hello")
     notepad.close()
     notepad.wait_for(object_type='dialog', caption='Notepad')
