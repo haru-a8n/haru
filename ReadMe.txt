@@ -1,4 +1,4 @@
-Haru Automation
+**Haru Automation**
 
 Installation
 * Download 32-bit version of Python 2.7.9 or newer from www.python.org
