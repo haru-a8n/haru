@@ -3,9 +3,9 @@ Windows UI Automation using mostly UIA
 
 ##Automate Notepad?
 ````python
-robot = Robot()
-robot.start(['notepad'])
-notepad = robot.Notepad
+app = App()
+app.start(['notepad'])
+notepad = app.Notepad
 notepad.edit.type("hello")
 notepad.close()
 notepad.wait_for(object_type='dialog', caption='Notepad')
