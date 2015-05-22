@@ -131,5 +131,24 @@ class HaruTest(unittest.TestCase):
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
 
+    @unittest.skipIf(skip, "bypass")
+    def test_wait_for(self):
+        """Test WaitWindowExists"""
+        app = haru.App()
+        app.start(['notepad.exe'])
+        notepad = app.Notepad
+        notepad.edit.type("hello")
+        is_checked = notepad.Menu.View.StatusBar.is_checked()
+        print('{} checked : {}'.format('*'*10, is_checked))
+        if not is_checked:
+            notepad.Menu.View.StatusBar.click()
+
+        sb = notepad.StatusBar(ClassName='msctls_statusbar32', FrameworkId='Win32', LocalizedControlType="status bar")
+        obj = sb.Window(ChildIndex=1)
+        notepad.Menu.File.Exit.click()
+        print('Test here')
+        notepad.wait_for(object_type='dialog', caption='Notepad')
+        notepad.Notepad.DontSave.click()
+
 if __name__ == '__main__':
     unittest.main()
