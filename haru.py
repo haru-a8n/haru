@@ -19,6 +19,7 @@ import comtypes
 import comtypes.client
 import ctypes
 from lib.sendkeys import SendKeys
+import re
 import string
 import subprocess
 import time
@@ -123,6 +124,21 @@ class CWindow(object):
             return self
 
     # noinspection PyMethodMayBeStatic
+    def __get_supported_properties(self, ae):
+        assert ae, "Automation Element is None"
+
+        prop_ids_all = sorted([x for x in dir(comtypes.gen.UIAutomationClient) if 'PropertyId' in x])
+        prop_ids = [x for x in prop_ids_all if '_Is' not in x]
+        prop_is = set(prop_ids_all).difference(prop_ids)
+        properties = {}
+        print('/'*80)
+        for prop_id in prop_ids_all:
+            id_to_check = getattr(comtypes.gen.UIAutomationClient, prop_id)
+            val = ae.GetCurrentPropertyValue(id_to_check)
+            print('{:<50}:{}'.format(prop_id, val))
+        print('/'*80)
+
+    # noinspection PyMethodMayBeStatic
     def best_match(self, str1, attr):
         """
         This will become a heuristic matching engine in the future
@@ -135,6 +151,21 @@ class CWindow(object):
             return True
         else:
             return False
+
+    def dump_child_elements(self, ae=None, verbose=False):
+        if ae is None:
+            ae = self.element
+
+        cvw = Uia().uia.ControlViewWalker
+        ae_child = cvw.GetFirstChildElement(ae)
+        while ae_child:
+            print('-'*67)
+            print('Name: {}'.format(ae_child.CurrentName))
+            print('ClassName: {}'.format(ae_child.CurrentClassName))
+            print('LocalizedControlType: {}'.format(ae_child.CurrentLocalizedControlType))
+            if verbose:
+                self.__get_supported_properties(ae_child)
+            ae_child = cvw.GetNextSiblingElement(ae_child)
 
     def get_child_element(self, ae_parent=None, search_scope='', **kwargs):
         """
@@ -485,11 +516,13 @@ class Uia(Singleton):
 
 
 if __name__ == '__main__':
-    app = App()
-    app.start(['notepad'])
-    notepad = app.Notepad
-    notepad.edit.type("hello")
-    notepad.close()
-    notepad.wait_for(object_type='dialog', caption='Notepad')
-    # notepad.Notepad.DontSave.invoke()
-    notepad.Notepad.DontSave.click()
+    # app = App()
+    # app.start(['notepad'])
+    # notepad = app.Notepad
+    # notepad.edit.type("hello")
+    # notepad.close()
+    # notepad.wait_for(object_type='dialog', caption='Notepad')
+    # notepad.Notepad.DontSave.click()
+
+    print(comtypes.gen.UIAutomationClient.UIA_IsValuePatternAvailablePropertyId)
+    print(dir(comtypes.gen.UIAutomationClient))

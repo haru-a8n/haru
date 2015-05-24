@@ -150,5 +150,20 @@ class HaruTest(unittest.TestCase):
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
 
+    @unittest.skipIf(skip, "bypass")
+    def test_dump_elements(self):
+        """Test dump elements"""
+        app = haru.App()
+        app.start(['notepad.exe'])
+        notepad = app.Notepad
+        notepad.dump_child_elements(verbose=True)
+        notepad.Menu.File.Exit.click()
+
+    # def test_dummy(self):
+    #     """Test dummy"""
+    #     uia = haru.Uia().uia
+    #     print(dir(uia))
+
+
 if __name__ == '__main__':
     unittest.main()
