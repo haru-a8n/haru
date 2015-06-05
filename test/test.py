@@ -1,10 +1,11 @@
+import os
 import unittest
 import sys
 sys.path.append('..')
 import haru
 
-# skip = True
-skip = False
+skip = True
+# skip = False
 
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
@@ -158,6 +159,17 @@ class HaruTest(unittest.TestCase):
         notepad = app.Notepad
         notepad.dump_child_elements(verbose=True)
         notepad.Menu.File.Exit.click()
+
+    def test_tree_view(self):
+        """Test Treeview object"""
+        app = haru.App()
+        loc = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testapp/treeview/bin/Debug/treeview.exe')
+        print(loc)
+        app.start([loc])
+        tv_test = app.treeview
+        tv = tv_test.Treeview(LocalizedControlType='tree')
+        tv.traverse('Root~A~AA~AAA')
+        tv_test.close()
 
     # def test_dummy(self):
     #     """Test dummy"""

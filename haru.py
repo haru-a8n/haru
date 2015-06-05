@@ -19,7 +19,10 @@ import comtypes
 import comtypes.client
 import ctypes
 from lib.sendkeys import SendKeys
-import re
+import lib.win32functions as win32functions
+import lib.win32defines as win32defines
+import lib.win32structures as win32structures
+from lib.timings import Timings
 import string
 import subprocess
 import time
@@ -45,6 +48,7 @@ class Logger(object):
             print('<{0}'.format(code_path))
             # Return the return value
             return out
+
         return wrapper
 
 
@@ -117,7 +121,7 @@ class CWindow(object):
             return self
         else:
             assert self.parent.element, 'Parent AE object None'
-            ae = self.get_child_element( ae_parent= self.parent.element,**kwargs )
+            ae = self.get_child_element(ae_parent=self.parent.element, **kwargs)
 
             assert ae, 'Automation element object None'
             self.element = ae
@@ -131,12 +135,119 @@ class CWindow(object):
         prop_ids = [x for x in prop_ids_all if '_Is' not in x]
         prop_is = set(prop_ids_all).difference(prop_ids)
         properties = {}
-        print('/'*80)
+        print('/' * 80)
         for prop_id in prop_ids_all:
             id_to_check = getattr(comtypes.gen.UIAutomationClient, prop_id)
             val = ae.GetCurrentPropertyValue(id_to_check)
             print('{:<50}:{}'.format(prop_id, val))
-        print('/'*80)
+        print('/' * 80)
+
+    def __rectangle(self, ae=None):
+        if ae is None:
+            _rect = self.element.CurrentBoundingRectangle
+        else:
+            _rect = ae.CurrentBoundingRectangle
+        return win32structures.RECT(_rect.left, _rect.top, _rect.right, _rect.bottom)
+
+    # noinspection PyMethodMayBeStatic,PyProtectedMember
+    def __perform_click_input(self,
+                              ae=None,
+                              button="left",
+                              coords=(None, None),
+                              double=False,
+                              button_down=True,
+                              button_up=True,
+                              absolute=False,
+                              wheel_dist=0):
+        """Perform a click action using SendInput
+
+        All the *ClickInput() and *MouseInput() methods use this function.
+
+        Thanks to a bug report from Tomas Walch (twalch) on sourceforge and code
+        seen at http://msdn.microsoft.com/en-us/magazine/cc164126.aspx this
+        function now always works the same way whether the mouse buttons are
+        swapped or not.
+
+        For example if you send a right click to Notepad.Edit - it will always
+        bring up a popup menu rather than 'clicking' it.
+        """
+
+        # Handle if the mouse buttons are swapped
+        if win32functions.GetSystemMetrics(win32defines.SM_SWAPBUTTON):
+            if button.lower() == 'left':
+                button = 'right'
+            else:
+                button = 'left'
+
+        events = []
+        if button.lower() == 'left':
+            if button_down:
+                events.append(win32defines.MOUSEEVENTF_LEFTDOWN)
+            if button_up:
+                events.append(win32defines.MOUSEEVENTF_LEFTUP)
+        elif button.lower() == 'right':
+            if button_down:
+                events.append(win32defines.MOUSEEVENTF_RIGHTDOWN)
+            if button_up:
+                events.append(win32defines.MOUSEEVENTF_RIGHTUP)
+        elif button.lower() == 'middle':
+            if button_down:
+                events.append(win32defines.MOUSEEVENTF_MIDDLEDOWN)
+            if button_up:
+                events.append(win32defines.MOUSEEVENTF_MIDDLEUP)
+        elif button.lower() == 'x':
+            if button_down:
+                events.append(win32defines.MOUSEEVENTF_XDOWN)
+            if button_up:
+                events.append(win32defines.MOUSEEVENTF_XUP)
+
+        if button.lower() == 'wheel':
+            events.append(win32defines.MOUSEEVENTF_WHEEL)
+
+        # if we were asked to double click (and we are doing a full click
+        # not just up or down.
+        if double and button_down and button_up:
+            events *= 2
+
+        if isinstance(coords, win32structures.RECT):
+            coords = (coords.left, coords.top)
+
+            #    # allow points objects to be passed as the coords
+            #    if isinstance(coords, win32structures.POINT):
+            #        coords = [coords.x, coords.y]
+            #    else:
+        coords = list(coords)
+
+        # set the default coordinates
+        if coords[0] is None:
+            coords[0] = self.__rectangle(ae).width() / 2
+        if coords[1] is None:
+            coords[1] = self.__rectangle(ae).height() / 2
+
+        if not absolute:
+            coords[0] = coords[0] + self.__rectangle(ae).left
+            coords[1] = coords[1] + self.__rectangle(ae).top
+
+        # set the cursor position
+        win32functions.SetCursorPos(coords[0], coords[1])
+        time.sleep(Timings.after_setcursorpos_wait)
+
+        inp_struct = win32structures.INPUT()
+        inp_struct.type = win32defines.INPUT_MOUSE
+
+        for event in events:
+            inp_struct._.mi.dwFlags = event
+            if button.lower() == 'wheel':
+                inp_struct._.mi.mouseData = wheel_dist
+            else:
+                inp_struct._.mi.mouseData = 0
+
+            win32functions.SendInput(
+                1,
+                ctypes.pointer(inp_struct),
+                ctypes.sizeof(inp_struct))
+
+            time.sleep(Timings.after_clickinput_wait)
 
     # noinspection PyMethodMayBeStatic
     def best_match(self, str1, attr):
@@ -159,7 +270,7 @@ class CWindow(object):
         cvw = Uia().uia.ControlViewWalker
         ae_child = cvw.GetFirstChildElement(ae)
         while ae_child:
-            print('-'*67)
+            print('-' * 67)
             print('Name: {}'.format(ae_child.CurrentName))
             print('ClassName: {}'.format(ae_child.CurrentClassName))
             print('LocalizedControlType: {}'.format(ae_child.CurrentLocalizedControlType))
@@ -197,7 +308,6 @@ class CWindow(object):
             # Match by kwargs
             conditions = []
             for key in kwargs:
-
                 prop = getattr(comtypes.gen.UIAutomationClient, 'UIA_{}PropertyId'.format(key))
                 cond = uia.CreatePropertyCondition(prop, kwargs[key])
                 conditions.append(cond)
@@ -207,7 +317,7 @@ class CWindow(object):
                 and_cond = uia.CreateAndCondition(conditions[0], conditions[1])
                 ae = ae_parent.FindFirst(scope, and_cond)
             elif cond_len > 2:
-                print('8'*88)
+                print('8' * 88)
                 and_cond_array = uia.CreateAndConditionFromArray(conditions)
                 ae = ae_parent.FindFirst(scope, and_cond_array)
             else:
@@ -218,6 +328,10 @@ class CWindow(object):
         return ae
 
     def invoke(self):
+        """
+        Cause the default action to be sent to the control. For example, send click to button.
+        :return: None
+        """
         retry_interval = 0.5
         retry_max = 5
         loops = 0
@@ -233,7 +347,11 @@ class CWindow(object):
                 loops += 1
                 if loops > retry_max:
                     raise
+
     click = invoke
+
+    def click2(self, ae):
+        self.__perform_click_input(ae=ae, coords=(-5, 0))
 
     def name(self):
         return self.element.CurrentName
@@ -246,7 +364,7 @@ class CWindow(object):
         ae = cvw.GetFirstChildElement(ae)
         print('string_match:', string_match)
         while ae:
-            print '-'*10
+            print '-' * 10
             print 'Name: ', ae.CurrentName
             print 'LocalizedControlType:', ae.CurrentLocalizedControlType
             print 'ClassName: ', ae.CurrentClassName
@@ -369,8 +487,117 @@ class CMenuItem(CWindow):
         return checked
 
 
+class CTreeView(CWindow):
+    """ TreeView control """
+
+    # noinspection PyClassHasNoInit
+    class ExpandCollapseState:
+        ExpandCollapseState_Collapsed, ExpandCollapseState_Expanded, ExpandCollapseState_PartiallyExpanded, \
+        ExpandCollapseState_LeafNode = range(4)
+
+    def __init__(self, attr=None, parent=None):
+        self.parent = parent
+        self.current_node = None  # Current Treeview node
+        super(CTreeView, self).__init__(attr=attr, parent=parent)
+
+        # This is when creating object specifically called for CTreeview
+        if str(attr).lower() == 'treeview' and self.element is None:
+            self.element = parent.element  # this is not the correct element, will be corrected in __call__
+
+    def __getattr__(self, attr):
+        if str(attr).lower() == 'popupmenu':
+
+            count = 0
+            while True:
+                try:
+                    self.Click(self.current_node, button='right')
+                    aeRoot = iprcs.uiauto().RootElement()
+                    assert aeRoot
+
+                    self.WaitWindowExists(aeRoot, LocalizedControlType='menu', timeout=10.0, waitInterval=0.5)
+                    break
+                except TimeOutError:
+                    # Why is menu is not there? not completed loading yet?
+                    if count > 5:
+                        raise DebuggingForcedError('Menu element not detected')
+
+                    count += 1
+                    print 'Menu cannot be detected, retrying %s' % count
+                    swf.SendKeys.SendWait('{ESC}')
+                    time.sleep(1.0)  # Wait long enough for the view to load
+                    #                    if bool(self.curnode.GetCurrentPropertyValue( swa.AutomationElement.IsOffscreenProperty)) == True:
+                    #                        print 'Item not visible, scrolling into view'
+                    #                        pat = self.curnode.GetCurrentPattern( swa.ScrollItemPattern.Pattern)
+                    #                        pat.ScrollIntoView()
+
+            obj = CPopupMenu(trace=True, attr=attr, parent=self)
+            return obj
+        else:  # AtributeError handled by base class
+            obj = super(CTreeView, self).__getattr__(attr)
+
+    def traverse(self, path, separator=None):
+        if separator is None:
+            separator = '~'
+        items = path.split(separator)
+        count_traverse = 0
+        while True:
+            ae = self.element
+            for item in items:
+                print('Node: {}'.format(item))
+                pattern_match = False
+                cond = Uia().uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId,
+                                                         item)
+                ae = ae.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
+                assert ae
+                state = ae.GetCurrentPropertyValue(
+                    comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId)
+
+                print('state: {}'.format(state))
+                if state == self.ExpandCollapseState.ExpandCollapseState_Expanded:
+                    pat = ae.GetCurrentPattern(swa.SelectionItemPattern.Pattern)
+                    pat.Select()
+                else:
+                    print('item: {}'.format(item))
+                    # SendKeys(item)
+                    self.click2(ae=ae)
+                    # self.Click(ae, button='left', offset=(5, 5))
+                    while True:
+                        state = ae.GetCurrentPropertyValue(
+                            comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId)
+                        print('current state : {}'.format(state))
+                        if state in (self.ExpandCollapseState.ExpandCollapseState_Expanded,
+                                     self.ExpandCollapseState.ExpandCollapseState_LeafNode):
+                            break
+                        print 'Waiting for %s to expand' % item
+                        time.sleep(0.1)
+                        # swf.SendKeys.SendWait('{RIGHT}')
+                    if bool(ae.GetCurrentPropertyValue(
+                            comtypes.gen.UIAutomationClient.UIA_IsScrollItemPatternAvailablePropertyId)):
+                        if_pattern = ae.GetCurrentPattern(
+                            comtypes.gen.UIAutomationClient.UIA_ScrollItemPatternId)
+                        pat = if_pattern.QueryInterface(
+                            comtypes.gen.UIAutomationClient.IUIAutomationScrollItemPattern)
+                        pat.ScrollIntoView()
+
+                if ae.GetCurrentPropertyValue(comtypes.gen.UIAutomationClient.UIA_NamePropertyId) == item:
+                    pattern_match = True
+                else:
+                    # raise DebuggingForcedError('Tree traverse bad item')
+                    break
+
+            if pattern_match:
+                break
+            else:
+                count_traverse += 1
+                if count_traverse > 3:
+                    raise DebuggingForcedError('Tree traverse bad item')
+
+        self.current_node = ae
+
+
 class MainWindow(CWindow):
     """Represents the main window"""
+
     def __init__(self, attr=None, parent=None):
 
         assert not (parent is None)
@@ -389,11 +616,11 @@ class MainWindow(CWindow):
                 print('we have ae')
                 break
             else:
-                print 'Main window not there yet, retrying... @%s'%time.asctime()
-                time.sleep( 0.1 )
+                print 'Main window not there yet, retrying... @%s' % time.asctime()
+                time.sleep(0.1)
                 i_loop += 1
                 if i_loop >= 5:
-                    print 'Giving up on trying to get main window...%s'%time.asctime()
+                    print 'Giving up on trying to get main window...%s' % time.asctime()
                     break
         self.element = ae
 
@@ -450,7 +677,7 @@ class MainWindow(CWindow):
                                                             caption)
                 ae = self.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
                 if ae is None:
-                    #print ">>> Waiting @%s"%time.asctime()
+                    # print ">>> Waiting @%s"%time.asctime()
                     time.sleep(waitInterval)
                 else:
                     break
