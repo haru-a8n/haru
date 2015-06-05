@@ -2,7 +2,7 @@
 Windows UI Automation using mostly UIA
 
 ##Automate Notepad?
-````python
+```python
 app = App()
 app.start(['notepad'])
 notepad = app.Notepad
