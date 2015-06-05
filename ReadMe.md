@@ -10,7 +10,7 @@ notepad.edit.type("hello")
 notepad.close()
 notepad.wait_for(object_type='dialog', caption='Notepad')
 notepad.Notepad.DontSave.click()
-````
+```
 
 
 ##Installation##
