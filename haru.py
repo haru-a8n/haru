@@ -350,8 +350,11 @@ class CWindow(object):
 
     click = invoke
 
-    def click2(self, ae):
-        self.__perform_click_input(ae=ae, coords=(-5, 0))
+    def click(self, **kwargs):
+        if len(kwargs) == 0:
+            self.invoke()
+        elif 'ae' in kwargs:
+            self.__perform_click_input(ae=kwargs['ae'], coords=(-5, 0))
 
     def name(self):
         return self.element.CurrentName
@@ -559,7 +562,7 @@ class CTreeView(CWindow):
                 else:
                     print('item: {}'.format(item))
                     # SendKeys(item)
-                    self.click2(ae=ae)
+                    self.click(ae=ae)
                     # self.Click(ae, button='left', offset=(5, 5))
                     while True:
                         state = ae.GetCurrentPropertyValue(

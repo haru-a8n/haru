@@ -4,8 +4,8 @@ import sys
 sys.path.append('..')
 import haru
 
-skip = True
-# skip = False
+# skip = True
+skip = False
 
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
