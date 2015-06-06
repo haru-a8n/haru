@@ -150,7 +150,7 @@ class CWindow(object):
         return win32structures.RECT(_rect.left, _rect.top, _rect.right, _rect.bottom)
 
     # noinspection PyMethodMayBeStatic,PyProtectedMember
-    def __perform_click_input(self,
+    def _perform_click_input(self,
                               ae=None,
                               button="left",
                               coords=(None, None),
@@ -354,7 +354,9 @@ class CWindow(object):
         if len(kwargs) == 0:
             self.invoke()
         elif 'ae' in kwargs:
-            self.__perform_click_input(ae=kwargs['ae'], coords=(-5, 0))
+            self._perform_click_input(ae=kwargs['ae'])
+        else:
+            raise NotImplementedError('No handler for argument yet')
 
     def name(self):
         return self.element.CurrentName
@@ -538,6 +540,12 @@ class CTreeView(CWindow):
         else:  # AtributeError handled by base class
             obj = super(CTreeView, self).__getattr__(attr)
 
+    def click(self, **kwargs):
+        if 'ae' in kwargs:
+            self._perform_click_input(ae=kwargs['ae'], coords=(-5, 0))
+        else:
+            return super(CTreeView, self).click(**kwargs)
+
     def traverse(self, path, separator=None):
         if separator is None:
             separator = '~'
@@ -561,9 +569,7 @@ class CTreeView(CWindow):
                     pat.Select()
                 else:
                     print('item: {}'.format(item))
-                    # SendKeys(item)
                     self.click(ae=ae)
-                    # self.Click(ae, button='left', offset=(5, 5))
                     while True:
                         state = ae.GetCurrentPropertyValue(
                             comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId)
