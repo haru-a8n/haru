@@ -18,7 +18,7 @@ limitations under the License.
 import comtypes
 import comtypes.client
 import ctypes
-from lib.sendkeys import SendKeys
+from lib.SendKeysCtypes import SendKeys
 import lib.win32functions as win32functions
 import lib.win32defines as win32defines
 import lib.win32structures as win32structures
@@ -382,6 +382,8 @@ class CWindow(object):
         # Don't need to assert if None, we need to check using other mechanism
         return ae
 
+    def sendkeys(self, keys):
+        SendKeys(keys)
 
 class CEdit(CWindow):
     """ Edit control """
@@ -401,7 +403,7 @@ class CEdit(CWindow):
             val = if_value_pattern.QueryInterface(comtypes.gen.UIAutomationClient.IUIAutomationValuePattern)
             val.SetValue(value)
         else:
-            assert "no type/sendkeys handler"
+            assert "Element does not support ValuePattern"
 
 
 class CMenuBar(CWindow):
@@ -486,7 +488,7 @@ class CMenuItem(CWindow):
         while True:
             el = Uia().uia.GetFocusedElement()
             if el.CurrentLocalizedControlType == 'menu item':
-                SendKeys('{ESC}')
+                self.sendkeys('{ESC}')
             else:
                 break
         return checked
@@ -579,7 +581,6 @@ class CTreeView(CWindow):
                             break
                         print 'Waiting for %s to expand' % item
                         time.sleep(0.1)
-                        # swf.SendKeys.SendWait('{RIGHT}')
                     if bool(ae.GetCurrentPropertyValue(
                             comtypes.gen.UIAutomationClient.UIA_IsScrollItemPatternAvailablePropertyId)):
                         if_pattern = ae.GetCurrentPattern(

@@ -4,8 +4,8 @@ import sys
 sys.path.append('..')
 import haru
 
-# skip = True
-skip = False
+skip = True
+# skip = False
 
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
@@ -160,6 +160,7 @@ class HaruTest(unittest.TestCase):
         notepad.dump_child_elements(verbose=True)
         notepad.Menu.File.Exit.click()
 
+    @unittest.skipIf(skip, "bypass")
     def test_tree_view(self):
         """Test Treeview object"""
         app = haru.App()
@@ -170,6 +171,23 @@ class HaruTest(unittest.TestCase):
         tv = tv_test.Treeview(LocalizedControlType='tree')
         tv.traverse('Root~A~AA~AAA')
         tv_test.close()
+
+    # @unittest.skipIf(skip, "bypass")
+    def test_popup_menu(self):
+        """Test handling of popup menu"""
+
+        app = haru.App()
+        app.start('notepad.exe')
+        notepad = app.Notepad
+        notepad.edit.type('hello world')
+        notepad.edit.sendkeys('^a')
+        notepad.edit.sendkeys('^c')
+        notepad.edit.sendkeys('{END}{ENTER}')
+        notepad.edit.sendkeys('^v{ENTER}^v{ENTER}^v{ENTER}')
+
+        notepad.Menu.File.Exit.click()
+        notepad.wait_for(object_type='dialog', caption='Notepad')
+        notepad.Notepad.DontSave.click()
 
     # def test_dummy(self):
     #     """Test dummy"""
