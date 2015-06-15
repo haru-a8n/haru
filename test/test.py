@@ -179,12 +179,13 @@ class HaruTest(unittest.TestCase):
         app = haru.App()
         app.start('notepad.exe')
         notepad = app.Notepad
-        notepad.edit.type('hello world')
-        notepad.edit.sendkeys('^a')
-        notepad.edit.sendkeys('^c')
-        notepad.edit.sendkeys('{END}{ENTER}')
-        notepad.edit.sendkeys('^v{ENTER}^v{ENTER}^v{ENTER}')
-
+        edit = notepad.edit
+        edit.type('hello world')
+        edit.sendkeys('^a')
+        edit.sendkeys('^c')
+        edit.sendkeys('{END}{ENTER}')
+        edit.sendkeys('^v{ENTER}^v{ENTER}^v{ENTER}')
+        edit.PopupMenu(path='Paste')
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()

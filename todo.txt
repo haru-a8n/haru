@@ -1,1 +1,2 @@
+[]: wait_for, use wait_window_exists()
 []: Specific click implementation in TreeView
