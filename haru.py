@@ -30,6 +30,11 @@ import time
 trace_on = True
 
 
+class TimeOutError(Exception):
+    """ Timeout exception error"""
+    pass
+
+
 class Logger(object):
     def __init__(self, trace):
         self.trace = trace
@@ -103,7 +108,7 @@ class CWindow(object):
         elif str(attr).lower() == 'edit':
             obj = CEdit(attr=attr, parent=self)
         elif str(attr).lower() == 'popupmenu':
-            self.Click(self.element, button='right')
+            self.click(ae=self.element, button='right')
             obj = CPopupMenu(attr=attr, parent=self)
         else:
             print('Generic window')
@@ -151,14 +156,14 @@ class CWindow(object):
 
     # noinspection PyMethodMayBeStatic,PyProtectedMember
     def _perform_click_input(self,
-                              ae=None,
-                              button="left",
-                              coords=(None, None),
-                              double=False,
-                              button_down=True,
-                              button_up=True,
-                              absolute=False,
-                              wheel_dist=0):
+                             ae=None,
+                             button="left",
+                             coords=(None, None),
+                             double=False,
+                             button_down=True,
+                             button_up=True,
+                             absolute=False,
+                             wheel_dist=0):
         """Perform a click action using SendInput
 
         All the *ClickInput() and *MouseInput() methods use this function.
@@ -351,10 +356,13 @@ class CWindow(object):
     click = invoke
 
     def click(self, **kwargs):
+        kw_len = len(kwargs)
         if len(kwargs) == 0:
             self.invoke()
-        elif 'ae' in kwargs:
+        elif kw_len == 1 and 'ae' in kwargs:
             self._perform_click_input(ae=kwargs['ae'])
+        elif kw_len == 2 and 'ae' in kwargs and 'button' in kwargs:
+            self._perform_click_input(ae=kwargs['ae'], button=kwargs['button'])
         else:
             raise NotImplementedError('No handler for argument yet')
 
@@ -384,6 +392,42 @@ class CWindow(object):
 
     def sendkeys(self, keys):
         SendKeys(keys)
+
+    def wait_window_exists(self, ae_parent=None, timeout=10.0, wait_interval=0.2, search_scope='Children', **kwargs):
+        """
+        timeout(float): -1, wait forever, else wait for x secs
+        kwargs:
+            Special keys:
+                NameBestMatch: Match using simple best match algorithm
+        :returns: automation element
+        """
+
+        def __name_best_match():
+            return self.NameBestMatch(aeObj=ae_parent, strMatch=kwargs['NameBestMatch'])
+
+        def __regular_match():
+            return self.get_child_element(ae_parent=ae_parent, search_scope=search_scope, **kwargs)
+
+        if ae_parent is None:
+            ae_parent = self.element
+
+        if 'NameBestMatch' in kwargs:
+            match_proc = __name_best_match
+        else:
+            match_proc = __regular_match
+
+        time_start = time.time()
+        while True:
+            ae = match_proc()
+            if ae:
+                return ae
+            else:
+                print('Waiting for window to exists: {}'.format(kwargs))
+                time.sleep(wait_interval)
+                if timeout != -1:
+                    if timeout < time.time() - time_start:
+                        raise TimeOutError
+
 
 class CEdit(CWindow):
     """ Edit control """
@@ -494,6 +538,83 @@ class CMenuItem(CWindow):
         return checked
 
 
+class CPopupMenu(CWindow):
+    """
+    PopupMenu handler. Can be called as a callable or as attribute
+
+    Usage:
+    app.PopupMenu(path='Menu1~Menu2')
+    Navigate to menu Menu1->Menu2 via a context menu
+    Optional parameters:
+        separator(string): string used to split the path, default is '~'
+    """
+
+    def __init__(self, attr=None, parent=None):
+        """
+        Optional parameters:
+            attr(string): setup automatically in __attr__ and various places
+            parent(Object): Parent object of this class instance, setup in __attr__ and various places
+        """
+        self.parent = parent
+
+        super(CPopupMenu, self).__init__(attr=attr, parent=parent, ae_init=True)
+
+        ae_root = Uia().root()
+        assert ae_root
+
+        ae_menu = self.wait_window_exists(ae_parent=ae_root, LocalizedControlType='menu', wait_interval=0.5)
+        assert ae_menu, 'Automation Element None'
+
+        self.element = ae_menu
+
+    def __call__(self, **kwargs):
+        sep = 'separator'
+        if sep in kwargs:
+            separator = kwargs[sep]
+            kwargs.pop(sep)
+        else:
+            separator = '~'
+
+        assert 'path' in kwargs
+        ae = self.element
+        assert ae
+
+        items = kwargs['path'].split(separator)
+        print('Items : {}'.format(items))
+        for item in items:
+            print 'Menu: ', item
+
+            count = 0
+            while True:
+                try:
+                    cond = Uia().uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId,
+                                                             item)
+                    # .Descendants, required for menu as the element parent/child relationship is messed up in win32
+                    ae_new = ae.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Descendants, condition=cond)
+                    if ae_new is None:
+                        self.wait_window_exists(ae_parent=ae, search_scope='Descendants', Name=item)
+                    else:
+                        ae = ae_new
+                        break
+                except TimeOutError:
+                    count += 1
+                    print 'Menu cannot be detected, retrying %s' % count
+                    swf.SendKeys.SendWait('{ESC}')
+                    ae.SetFocus()
+                    swf.SendKeys.SendWait('{RIGHT}')
+                    if count > 5:
+                        msg = 'Menu element not detected %s... retrying' % item
+                        raise DebuggingForcedError(msg)
+            assert ae
+            if items.index(item) < len(items) - 1:
+                print 'Focusing ', item
+                ae.SetFocus()
+                swf.SendKeys.SendWait('{RIGHT}')
+
+        self.click(ae=ae)
+        return self
+
+
 class CTreeView(CWindow):
     """ TreeView control """
 
@@ -521,7 +642,7 @@ class CTreeView(CWindow):
                     aeRoot = iprcs.uiauto().RootElement()
                     assert aeRoot
 
-                    self.WaitWindowExists(aeRoot, LocalizedControlType='menu', timeout=10.0, waitInterval=0.5)
+                    self.wait_window_exists(aeRoot, LocalizedControlType='menu', timeout=10.0, wait_interval=0.5)
                     break
                 except TimeOutError:
                     # Why is menu is not there? not completed loading yet?
@@ -687,7 +808,6 @@ class MainWindow(CWindow):
                                                             caption)
                 ae = self.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
                 if ae is None:
-                    # print ">>> Waiting @%s"%time.asctime()
                     time.sleep(waitInterval)
                 else:
                     break

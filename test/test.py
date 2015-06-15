@@ -4,8 +4,8 @@ import sys
 sys.path.append('..')
 import haru
 
-skip = True
-# skip = False
+# skip = True
+skip = False
 
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
@@ -83,7 +83,7 @@ class HaruTest(unittest.TestCase):
         notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
-        print('{} checked : {}'.format('*'*10, is_checked))
+        print('{} checked : {}'.format('*' * 10, is_checked))
         if not is_checked:
             notepad.Menu.View.StatusBar.click()
 
@@ -102,7 +102,7 @@ class HaruTest(unittest.TestCase):
         notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
-        print('{} checked : {}'.format('*'*10, is_checked))
+        print('{} checked : {}'.format('*' * 10, is_checked))
         if not is_checked:
             notepad.Menu.View.StatusBar.click()
 
@@ -121,7 +121,7 @@ class HaruTest(unittest.TestCase):
         notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
-        print('{} checked : {}'.format('*'*10, is_checked))
+        print('{} checked : {}'.format('*' * 10, is_checked))
         if not is_checked:
             notepad.Menu.View.StatusBar.click()
 
@@ -140,7 +140,7 @@ class HaruTest(unittest.TestCase):
         notepad = app.Notepad
         notepad.edit.type("hello")
         is_checked = notepad.Menu.View.StatusBar.is_checked()
-        print('{} checked : {}'.format('*'*10, is_checked))
+        print('{} checked : {}'.format('*' * 10, is_checked))
         if not is_checked:
             notepad.Menu.View.StatusBar.click()
 
@@ -172,10 +172,9 @@ class HaruTest(unittest.TestCase):
         tv.traverse('Root~A~AA~AAA')
         tv_test.close()
 
-    # @unittest.skipIf(skip, "bypass")
+    @unittest.skipIf(skip, "bypass")
     def test_popup_menu(self):
         """Test handling of popup menu"""
-
         app = haru.App()
         app.start('notepad.exe')
         notepad = app.Notepad
@@ -189,12 +188,6 @@ class HaruTest(unittest.TestCase):
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
-
-    # def test_dummy(self):
-    #     """Test dummy"""
-    #     uia = haru.Uia().uia
-    #     print(dir(uia))
-
 
 if __name__ == '__main__':
     unittest.main()
