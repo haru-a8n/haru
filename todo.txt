@@ -1,3 +1,2 @@
 []: wait_for, use wait_window_exists()
 []: Retry File | Exit (menu actions)
-[]: Specific click implementation in TreeView

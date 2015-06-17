@@ -328,8 +328,6 @@ class CWindow(object):
             else:
                 ae = ae_parent.FindFirst(scope, cond)
 
-            assert ae, 'Automation element None using PropertyId search'
-
         return ae
 
     def invoke(self):
@@ -803,17 +801,7 @@ class MainWindow(CWindow):
         """
         time_start = time.time()
         if str(object_type).lower() == 'dialog':
-            while 1:
-                cond = self.uia.uia.CreatePropertyCondition(comtypes.gen.UIAutomationClient.UIA_NamePropertyId,
-                                                            caption)
-                ae = self.element.FindFirst(scope=comtypes.gen.UIAutomationClient.TreeScope_Children, condition=cond)
-                if ae is None:
-                    time.sleep(waitInterval)
-                else:
-                    break
-                if timeout != -1:
-                    if timeout < time.time() - time_start:
-                        raise TimeOutError
+            ae = self.wait_window_exists(timeout=timeout, wait_interval=wait_interval, Name=caption)
         else:
             raise DebuggingForcedError
 
