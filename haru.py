@@ -356,7 +356,7 @@ class CWindow(object):
     def click(self, **kwargs):
         kw_len = len(kwargs)
         if len(kwargs) == 0:
-            self.invoke()
+            self._perform_click_input(ae=self.element)
         elif kw_len == 1 and 'ae' in kwargs:
             self._perform_click_input(ae=kwargs['ae'])
         elif kw_len == 2 and 'ae' in kwargs and 'button' in kwargs:
@@ -492,6 +492,7 @@ class CMenuItem(CWindow):
                 time.sleep(0.1)
 
         else:
+            print('menu item.... yes')
             # First call will get the main menu, e.g. File
             cond = Uia().uia.CreateTrueCondition()
             ae = parent.ae_main.FindFirst(comtypes.gen.UIAutomationClient.TreeScope_Descendants,
