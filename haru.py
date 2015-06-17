@@ -460,7 +460,6 @@ class CMenuBar(CWindow):
         super(CMenuBar, self).__init__(attr=attr, parent=parent)
 
     def __getattr__(self, attr):
-        # self.parent.proc.WaitForInputIdle()
         self.parent.wait_for_input_idle()
 
         obj = CMenuItem(attr=attr, parent=self)
@@ -488,8 +487,10 @@ class CMenuItem(CWindow):
             while ae.GetCurrentPropertyValue(
                     comtypes.gen.UIAutomationClient.UIA_ExpandCollapseExpandCollapseStatePropertyId) != \
                     ExpandCollapseState_Expanded:
-                print('Waiting for {} to expand--@{}'.format(parent.element.CurrentName, time.asctime()))
+                print('Waiting for {}/{} to expand--@{}'.format(parent.element.CurrentName, attr, time.asctime()))
+                self.click(ae=ae)
                 time.sleep(0.1)
+
         else:
             # First call will get the main menu, e.g. File
             cond = Uia().uia.CreateTrueCondition()
