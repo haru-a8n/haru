@@ -291,7 +291,7 @@ class CWindow(object):
         """
 
         assert len(kwargs)
-        print 'Properties: %s' % kwargs
+        print('Properties: %s' % kwargs)
 
         if ae_parent is None:
             ae_parent = self.element
@@ -345,7 +345,7 @@ class CWindow(object):
                 if_invoke.invoke()
                 break
             except:
-                print 'Retrying invoke...'
+                print('Retrying invoke...')
                 time.sleep(retry_interval)
                 loops += 1
                 if loops > retry_max:
@@ -375,10 +375,10 @@ class CWindow(object):
         ae = cvw.GetFirstChildElement(ae)
         print('string_match:', string_match)
         while ae:
-            print '-' * 10
-            print 'Name: ', ae.CurrentName
-            print 'LocalizedControlType:', ae.CurrentLocalizedControlType
-            print 'ClassName: ', ae.CurrentClassName
+            print('-' * 10)
+            print('Name: ', ae.CurrentName)
+            print('LocalizedControlType:', ae.CurrentLocalizedControlType)
+            print('ClassName: ', ae.CurrentClassName)
             if self.best_match(ae.CurrentClassName, string_match):
                 break
             elif ae.CurrentName is not None and self.best_match(ae.CurrentName, string_match):
@@ -582,7 +582,7 @@ class CPopupMenu(CWindow):
         items = kwargs['path'].split(separator)
         print('Items : {}'.format(items))
         for item in items:
-            print 'Menu: ', item
+            print('Menu: ', item)
 
             count = 0
             while True:
@@ -598,7 +598,7 @@ class CPopupMenu(CWindow):
                         break
                 except TimeOutError:
                     count += 1
-                    print 'Menu cannot be detected, retrying %s' % count
+                    print('Menu cannot be detected, retrying %s' % count)
                     swf.SendKeys.SendWait('{ESC}')
                     ae.SetFocus()
                     swf.SendKeys.SendWait('{RIGHT}')
@@ -607,7 +607,7 @@ class CPopupMenu(CWindow):
                         raise DebuggingForcedError(msg)
             assert ae
             if items.index(item) < len(items) - 1:
-                print 'Focusing ', item
+                print('Focusing ', item)
                 ae.SetFocus()
                 swf.SendKeys.SendWait('{RIGHT}')
 
@@ -650,7 +650,7 @@ class CTreeView(CWindow):
                         raise DebuggingForcedError('Menu element not detected')
 
                     count += 1
-                    print 'Menu cannot be detected, retrying %s' % count
+                    print('Menu cannot be detected, retrying %s' % count)
                     swf.SendKeys.SendWait('{ESC}')
                     time.sleep(1.0)  # Wait long enough for the view to load
                     #                    if bool(self.curnode.GetCurrentPropertyValue( swa.AutomationElement.IsOffscreenProperty)) == True:
@@ -700,7 +700,7 @@ class CTreeView(CWindow):
                         if state in (self.ExpandCollapseState.ExpandCollapseState_Expanded,
                                      self.ExpandCollapseState.ExpandCollapseState_LeafNode):
                             break
-                        print 'Waiting for %s to expand' % item
+                        print('Waiting for %s to expand' % item)
                         time.sleep(0.1)
                     if bool(ae.GetCurrentPropertyValue(
                             comtypes.gen.UIAutomationClient.UIA_IsScrollItemPatternAvailablePropertyId)):
@@ -747,11 +747,11 @@ class MainWindow(CWindow):
                 print('we have ae')
                 break
             else:
-                print 'Main window not there yet, retrying... @%s' % time.asctime()
+                print('Main window not there yet, retrying... @%s' % time.asctime())
                 time.sleep(0.1)
                 i_loop += 1
                 if i_loop >= 5:
-                    print 'Giving up on trying to get main window...%s' % time.asctime()
+                    print('Giving up on trying to get main window...%s' % time.asctime())
                     break
         self.element = ae
 
@@ -776,7 +776,7 @@ class MainWindow(CWindow):
         if obj.element:
             return obj
         else:
-            raise AttributeError, attr
+            raise(AttributeError, attr)
 
     @Logger(trace_on)
     def close(self):

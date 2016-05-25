@@ -62,15 +62,15 @@ class HaruTest(unittest.TestCase):
         # Either check it or not
         notepad.Menu.View.StatusBar.click()
         if notepad.Menu.View.StatusBar.is_checked():
-            print "Item checked"
+            print("Item checked")
         else:
-            print "not checked"
+            print("not checked")
         # Either check it or not
         notepad.Menu.View.StatusBar.click()
         if notepad.Menu.View.StatusBar.is_checked():
-            print "Item checked"
+            print("Item checked")
         else:
-            print "not checked"
+            print("not checked")
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
@@ -89,7 +89,7 @@ class HaruTest(unittest.TestCase):
 
         sb = notepad.StatusBar(ClassName='msctls_statusbar32')
         obj = sb.Window(ChildIndex=1)
-        print obj.name()
+        print(obj.name())
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
@@ -108,7 +108,7 @@ class HaruTest(unittest.TestCase):
 
         sb = notepad.StatusBar(ClassName='msctls_statusbar32', FrameworkId='Win32')
         obj = sb.Window(ChildIndex=1)
-        print obj.name()
+        print(obj.name())
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
@@ -127,7 +127,7 @@ class HaruTest(unittest.TestCase):
 
         sb = notepad.StatusBar(ClassName='msctls_statusbar32', FrameworkId='Win32', LocalizedControlType="status bar")
         obj = sb.Window(ChildIndex=1)
-        print obj.name()
+        print(obj.name())
         notepad.Menu.File.Exit.click()
         notepad.wait_for(object_type='dialog', caption='Notepad')
         notepad.Notepad.DontSave.click()
