@@ -260,8 +260,8 @@ class CWindow(object):
         This will become a heuristic matching engine in the future
         """
 
-        str1 = string.replace(str1, ' ', '')
-        str1 = string.replace(str1, "'", "")
+        str1 = str1.replace(' ', '')
+        str1 = str1.replace("'", "")
         str1 = str1.encode('ascii', 'ignore')
         if str(attr).lower() in str(str1).lower():
             return True

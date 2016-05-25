@@ -7,6 +7,7 @@ import haru
 # skip = True
 skip = False
 
+
 class HaruTest(unittest.TestCase):
     @unittest.skipIf(skip, "bypass")
     def test_cwindow_invoke(self):
