@@ -14,7 +14,7 @@ notepad.Notepad.DontSave.click()
 
 
 ##Installation##
-* Download 32-bit version of Python 2.7.9 or newer from www.python.org
+* Download 32-bit version of Python 3.5.1 or newer (tested using Miniconda 3 [Python 3.5.1, 32-bit])
 * Install comtypes
   * Other Windows OS versions
   ```console
