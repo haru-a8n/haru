@@ -23,11 +23,14 @@ import lib.win32functions as win32functions
 import lib.win32defines as win32defines
 import lib.win32structures as win32structures
 from lib.timings import Timings
-import string
+import logging
 import subprocess
 import time
 
 trace_on = True
+
+log = logging.getLogger(__name__)
+log.info('Entered module: %s' % __name__)
 
 
 class TimeOutError(Exception):
@@ -48,12 +51,10 @@ class Logger(object):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             code_path = '{0}.{1}'.format(args[0].__class__.__name__, fn.__name__)
-            print('>{0}'.format(code_path))
+            print('>>{0}'.format(code_path))
             out = fn(*args, **kwargs)
-            print('<{0}'.format(code_path))
-            # Return the return value
+            print('<<{0}'.format(code_path))
             return out
-
         return wrapper
 
 
@@ -155,6 +156,7 @@ class CWindow(object):
         return win32structures.RECT(_rect.left, _rect.top, _rect.right, _rect.bottom)
 
     # noinspection PyMethodMayBeStatic,PyProtectedMember
+    @Logger(trace_on)
     def _perform_click_input(self,
                              ae=None,
                              button="left",
@@ -234,23 +236,27 @@ class CWindow(object):
             coords[1] = coords[1] + self.__rectangle(ae).top
 
         # set the cursor position
-        win32functions.SetCursorPos(coords[0], coords[1])
+        win32functions.SetCursorPos(int(coords[0]), int(coords[1]))
         time.sleep(Timings.after_setcursorpos_wait)
 
         inp_struct = win32structures.INPUT()
         inp_struct.type = win32defines.INPUT_MOUSE
 
         for event in events:
+            print('event : {}'.format(event))
             inp_struct._.mi.dwFlags = event
             if button.lower() == 'wheel':
                 inp_struct._.mi.mouseData = wheel_dist
             else:
                 inp_struct._.mi.mouseData = 0
 
-            win32functions.SendInput(
+            si_ret = win32functions.SendInput(
                 1,
                 ctypes.pointer(inp_struct),
                 ctypes.sizeof(inp_struct))
+            print('SendInput return value: {}'.format(si_ret))
+            if si_ret == 0:
+                print('GetLastError : {}'.format(ctypes.GetLastError()))
 
             time.sleep(Timings.after_clickinput_wait)
 

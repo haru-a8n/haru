@@ -22,7 +22,7 @@
 
 import ctypes
 
-GetSystemMetrics    = ctypes.windll.user32.GetSystemMetrics
-MapVirtualKey       = ctypes.windll.user32.MapVirtualKeyW
-SendInput           = ctypes.windll.user32.SendInput
-SetCursorPos        = ctypes.windll.user32.SetCursorPos
+GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
+MapVirtualKey = ctypes.windll.user32.MapVirtualKeyW
+SendInput = ctypes.windll.user32.SendInput
+SetCursorPos = ctypes.windll.user32.SetCursorPos

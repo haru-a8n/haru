@@ -6,8 +6,8 @@ The tips and tricks at http://www.pinvoke.net/default.aspx/user32.sendinput
 is useful!
 
 """
-import time
 import ctypes
+import time
 
 __all__ = ['KeySequenceError', 'SendKeys']
 
@@ -295,10 +295,8 @@ class KeyAction(object):
     action (press or release or both) of a particular key.
     """
 
-    def __init__(self, key, down = True, up = True):
+    def __init__(self, key, down=True, up=True):
         self.key = key
-        if isinstance(self.key, basestring):
-            self.key = unicode(key)
         self.down = down
         self.up = up
 

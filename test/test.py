@@ -191,4 +191,4 @@ class HaruTest(unittest.TestCase):
         notepad.Notepad.DontSave.click()
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(failfast=True)
