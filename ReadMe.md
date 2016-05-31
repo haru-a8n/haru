@@ -24,11 +24,7 @@ notepad.Notepad.DontSave.click()
   ```console
       python -m pip install comtypes
   ```
-* Install six Python 2 and 3 compatibility library
-```console
-  pip install six
-```
-	
+
 ##Related projects##
 * http://code.google.com/p/swapy/
 * http://code.google.com/p/pywinauto/
