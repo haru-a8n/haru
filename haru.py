@@ -138,13 +138,14 @@ class CWindow(object):
         assert ae, "Automation Element is None"
 
         prop_ids_all = sorted([x for x in dir(comtypes.gen.UIAutomationClient) if 'PropertyId' in x])
-        prop_ids = [x for x in prop_ids_all if '_Is' not in x]
-        prop_is = set(prop_ids_all).difference(prop_ids)
-        properties = {}
         print('/' * 80)
         for prop_id in prop_ids_all:
+            val = ''
             id_to_check = getattr(comtypes.gen.UIAutomationClient, prop_id)
-            val = ae.GetCurrentPropertyValue(id_to_check)
+            try:
+                val = ae.GetCurrentPropertyValue(id_to_check)
+            except KeyError:
+                pass
             print('{:<50}:{}'.format(prop_id, val))
         print('/' * 80)
 
