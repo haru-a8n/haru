@@ -1,1 +1,1 @@
-[]: Retry File | Exit (menu actions)
+``[]: Retry File | Exit (menu actions)

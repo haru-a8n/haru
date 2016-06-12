@@ -1,7 +1,12 @@
 import os
 import unittest
 import sys
-sys.path.append('..')
+
+path = os.path.realpath(__file__)
+p = os.path.split(path)
+while p[1] != 'test':
+    p = os.path.split(p[0])
+sys.path.append(p[0])
 import haru
 
 # skip = True
