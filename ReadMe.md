@@ -3,8 +3,8 @@ Windows UI Automation using mostly UIA
 
 ##Automate Notepad?
 ```python
-app = App()
-app.start(['notepad'])
+app = haru.App()
+app.start('notepad.exe')
 notepad = app.Notepad
 notepad.edit.type("hello")
 notepad.close()

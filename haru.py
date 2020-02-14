@@ -870,13 +870,5 @@ class Uia(Singleton):
 
 
 if __name__ == '__main__':
-    # app = App()
-    # app.start(['notepad'])
-    # notepad = app.Notepad
-    # notepad.edit.type("hello")
-    # notepad.close()
-    # notepad.wait_for(object_type='dialog', caption='Notepad')
-    # notepad.Notepad.DontSave.click()
-
     print(comtypes.gen.UIAutomationClient.UIA_IsValuePatternAvailablePropertyId)
     print(dir(comtypes.gen.UIAutomationClient))
