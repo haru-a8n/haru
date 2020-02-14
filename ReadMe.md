@@ -15,7 +15,7 @@ notepad.Notepad.DontSave.click()
 
 ##Installation##
 * Download 32-bit version of Python 3.7.4 or newer (tested using Miniconda 3 [Python 3.7.4, 32-bit])  
-  * Python 3.8.1 has a bug the prevents using comtypes, see
+  * Python 3.8.1 has a bug that prevents using comtypes, see
     * [Cannot Import pywinauto (comtypes passes a union by value)](https://github.com/pywinauto/pywinauto/issues/868)
     * [bpo-16575: Disabled checks for union types being passed by value](https://github.com/python/cpython/pull/17960)
     * Recommend to use Python 3.7.4 
