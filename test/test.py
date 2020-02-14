@@ -168,7 +168,9 @@ class HaruTest(unittest.TestCase):
 
     @unittest.skipIf(skip, "bypass")
     def test_tree_view(self):
-        """Test Treeview object"""
+        """Test Treeview object
+        Note that this requires test\testapp\treeview.sln be built using Visual Studio
+        """
         app = haru.App()
         loc = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'testapp/treeview/bin/Debug/treeview.exe')
         print(loc)
