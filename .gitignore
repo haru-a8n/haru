@@ -3,8 +3,6 @@
 .idea
 *.exe
 *.pdb
-test/testapp/treeview/obj/x86/Debug/treeview.csproj.FileListAbsolute.txt
-test/testapp/treeview/obj/x86/Debug/treeview.csproj.GenerateResource.Cache
-test/testapp/treeview/obj/x86/Debug/treeview.MainForm.resources
-test/testapp/treeview/obj/x86/Debug/treeview.csprojResolveAssemblyReference.cache
+test/testapp/treeview/.vs
+test/testapp/treeview/obj/
 .vscode
